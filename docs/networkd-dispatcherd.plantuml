@@ -1,0 +1,30 @@
+@startuml networkd-dispatcherd
+
+skinparam BoxPadding 10
+
+participant DBus
+box "networkd-dispatchd" #LightBlue
+participant Dispatcher
+participant Script
+participant Environments
+participant Launcher
+end box
+participant System
+
+autonumber
+
+== Initialization ==
+Launcher -> Launcher ++ : recv
+Dispatcher -> Dispatcher ++ : listen
+
+== Receive Signal ==
+DBus -> Dispatcher ++ : signal
+Dispatcher -> Script ++ : get script list
+return script list
+Dispatcher -> Environments ++ : fetch env
+return env
+Dispatcher -> Launcher --: send script list to queue
+Launcher -> System ++ : execute script
+return done
+
+@enduml

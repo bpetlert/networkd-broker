@@ -1,0 +1,13 @@
+{
+  "Idx": 3,
+  "Link": "enp6s0",
+  "LinkFile": "/usr/lib/systemd/network/99-default.link",
+  "NetworkFile": "n/a",
+  "Type": "ether",
+  "State": "off (unmanaged)",
+  "Path": "pci-0000:06:00.0",
+  "Driver": "atl1c",
+  "Vendor": "Qualcomm Atheros",
+  "Model": "AR8161 Gigabit Ethernet",
+  "HWAddress": "66:3b:76:9c:31:1f (Dell Inc.)"
+}

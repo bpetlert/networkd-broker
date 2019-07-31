@@ -1,0 +1,6 @@
+(?x)
+^\x20+(?P<idx>\d+)         # IDX
+\x20+(?P<iface>\S+)        # IFACE
+\x20+(?P<type>\S+)         # TYPE
+\x20+(?P<operational>\S+)  # OPERATIONAL
+\x20+(?P<setup>\S+)        # SETUP

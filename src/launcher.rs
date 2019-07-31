@@ -1,0 +1,32 @@
+use std::{
+    sync::mpsc::{channel, RecvError, Sender},
+    thread,
+};
+
+use crate::script::Script;
+
+#[derive(Debug)]
+pub struct Launcher {
+    tx: Sender<Box<Script>>,
+}
+
+impl Launcher {
+    pub fn new() -> Launcher {
+        let (tx, rx) = channel::<Box<Script>>();
+
+        thread::spawn(move || loop {
+            match rx.recv() {
+                Ok(script) => {
+                    script.execute().unwrap();
+                }
+                Err(RecvError {}) => {}
+            };
+        });
+
+        Launcher { tx }
+    }
+
+    pub fn add(&self, script: Script) {
+        self.tx.send(Box::new(script)).unwrap();
+    }
+}

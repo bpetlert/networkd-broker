@@ -1,0 +1,9 @@
+{
+  "Idx": 1,
+  "Link": "lo",
+  "LinkFile": "/usr/lib/systemd/network/99-default.link",
+  "NetworkFile": "n/a",
+  "Type": "loopback",
+  "State": "carrier (unmanaged)",
+  "Address": ["127.0.0.1", "::1"]
+}

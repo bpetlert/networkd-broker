@@ -1,0 +1,12 @@
+Connected to 19:21:12:bf:23:c6 (on wlp3s0)
+	SSID: Haven
+	freq: 5745
+	RX: 1320739792 bytes (2087984 packets)
+	TX: 71327251 bytes (388284 packets)
+	signal: -10 dBm
+	rx bitrate: 300.0 MBit/s MCS 15 40MHz short GI
+	tx bitrate: 270.0 MBit/s MCS 14 40MHz short GI
+
+	bss flags:	short-preamble short-slot-time
+	dtim period:	2
+	beacon int:	100
