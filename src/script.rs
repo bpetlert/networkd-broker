@@ -107,6 +107,7 @@ impl Script {
     }
 
     pub fn execute_nowait(&self) -> Result<()> {
+        info!("Try to execute (nowait) {}", self.path());
         match Command::new(&self.path)
             .args(&self.args.pack())
             .envs(self.envs.pack())
@@ -125,6 +126,7 @@ impl Script {
 
     pub fn execute_wait(&self, secs: u64) -> Result<()> {
         let timeout = Duration::from_secs(secs);
+        info!("Try to execute {}", self.path());
         let mut script = Command::new(&self.path)
             .args(&self.args.pack())
             .envs(self.envs.pack())
