@@ -161,6 +161,7 @@ impl Script {
         let mut scripts: Vec<Script> = Vec::new();
         for entry in WalkDir::new(&path)
             .min_depth(1)
+            .max_depth(1)
             .sort_by(|a, b| a.file_name().cmp(b.file_name()))
             .into_iter()
             .filter_map(|e| e.ok())
