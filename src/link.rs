@@ -207,11 +207,8 @@ impl Link {
         self
     }
 
-    pub fn link_type<S>(&mut self, link_type: S) -> &mut Link
-    where
-        S: AsRef<str>,
-    {
-        self.link_type = LinkType::from_str(link_type.as_ref()).unwrap();
+    pub fn link_type(&mut self, link_type: LinkType) -> &mut Link {
+        self.link_type = link_type;
         self
     }
 

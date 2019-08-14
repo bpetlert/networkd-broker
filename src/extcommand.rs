@@ -22,9 +22,10 @@ impl ExtCommand {
         let mut info = ExtCommand::call_networkctl_status(&link.iface)?;
 
         if link.link_type == LinkType::Wlan {
-            let iw_info = ExtCommand::call_iw_link(&link.iface)?;
-            for (key, val) in iw_info {
-                info.insert(key, val);
+            if let Ok(iw_info) = ExtCommand::call_iw_link(&link.iface) {
+                for (key, val) in iw_info {
+                    info.insert(key, val);
+                }
             }
         }
 
@@ -106,7 +107,7 @@ impl ExtCommand {
         ExtCommand::parse_iw_link(output.stdout)
     }
 
-    fn parse_networkctl_list(raw_output: Vec<u8>) -> Result<HashMap<u8, Link>> {
+    pub fn parse_networkctl_list(raw_output: Vec<u8>) -> Result<HashMap<u8, Link>> {
         lazy_static! {
             static ref PATTERN: Regex = Regex::new(include_str!("networkctl_list.regex")).unwrap();
         }
@@ -127,6 +128,8 @@ impl ExtCommand {
                 let setup =
                     OperationalStatus::from_str(cap.name("setup").unwrap().as_str()).unwrap();
 
+                let link_type = LinkType::from_str(link_type).unwrap();
+
                 let mut ln = Link::new();
                 ln.idx(idx)
                     .iface(iface)
@@ -142,7 +145,7 @@ impl ExtCommand {
         Ok(links)
     }
 
-    fn parse_networkctl_status(raw_output: Vec<u8>) -> Result<Map<String, Value>> {
+    pub fn parse_networkctl_status(raw_output: Vec<u8>) -> Result<Map<String, Value>> {
         lazy_static! {
             static ref STATUS_PATTERN_SET: RegexSet = RegexSet::new(&[
                 include_str!("networkctl_status_idx_link.regex"),
@@ -227,7 +230,7 @@ impl ExtCommand {
         Ok(status)
     }
 
-    fn parse_iw_link(raw_output: Vec<u8>) -> Result<Map<String, Value>> {
+    pub fn parse_iw_link(raw_output: Vec<u8>) -> Result<Map<String, Value>> {
         lazy_static! {
             static ref LINK_PATTERN: Regex = Regex::new(include_str!("iw_dev_link.regex")).unwrap();
         }

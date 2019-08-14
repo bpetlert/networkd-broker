@@ -15,8 +15,8 @@ pub enum AppError {
     NotLinkEvent,
     NotSignal,
     ParseIwLinkFailed,
-    ParseNetworkctlListFailed,
-    ParseNetworkctlStatusFailed,
+    // ParseNetworkctlListFailed,
+    // ParseNetworkctlStatusFailed,
     Timeout,
 }
 

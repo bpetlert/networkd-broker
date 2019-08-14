@@ -1,7 +1,9 @@
 use std::{
+    collections::HashMap,
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     process::Command,
+    sync::Arc,
     time::Duration,
 };
 
@@ -52,8 +54,8 @@ impl Arguments {
 #[derive(Debug)]
 pub struct Script {
     path: PathBuf,
-    args: Arguments,
-    envs: Environments,
+    args: Option<Arc<Arguments>>,
+    envs: Option<Arc<Environments>>,
     no_wait: bool,
     timeout: u64,
 }
@@ -72,8 +74,8 @@ impl Script {
 
         Script {
             path,
-            args: Arguments::new(),
-            envs: Environments::new(),
+            args: None,
+            envs: None,
             no_wait,
             timeout: 20,
         }
@@ -83,12 +85,12 @@ impl Script {
         self.path.to_str().unwrap()
     }
 
-    pub fn args(&mut self, args: Arguments) -> &mut Script {
+    pub fn args(&mut self, args: Option<Arc<Arguments>>) -> &mut Script {
         self.args = args;
         self
     }
 
-    pub fn envs(&mut self, envs: Environments) -> &mut Script {
+    pub fn envs(&mut self, envs: Option<Arc<Environments>>) -> &mut Script {
         self.envs = envs;
         self
     }
@@ -107,12 +109,19 @@ impl Script {
     }
 
     pub fn execute_nowait(&self) -> Result<()> {
+        let args: Vec<&String> = match &self.args {
+            Some(a) => a.pack(),
+            None => Vec::new(),
+        };
+
+        let empty_envs: HashMap<String, String> = HashMap::new();
+        let envs: &HashMap<String, String> = match &self.envs {
+            Some(e) => e.pack(),
+            None => &empty_envs,
+        };
+
         info!("Try to execute (nowait) {}", self.path());
-        match Command::new(&self.path)
-            .args(&self.args.pack())
-            .envs(self.envs.pack())
-            .spawn()
-        {
+        match Command::new(&self.path).args(&args).envs(envs).spawn() {
             Ok(_) => {
                 info!("Executed (nowait) {}", self.path());
                 Ok(())
@@ -125,11 +134,23 @@ impl Script {
     }
 
     pub fn execute_wait(&self, secs: u64) -> Result<()> {
+        let args: Vec<&String> = match &self.args {
+            Some(a) => a.pack(),
+            None => Vec::new(),
+        };
+
+        let empty_envs: HashMap<String, String> = HashMap::new();
+        let envs: &HashMap<String, String> = match &self.envs {
+            Some(e) => e.pack(),
+            None => &empty_envs,
+        };
+
         let timeout = Duration::from_secs(secs);
+
         info!("Try to execute {}", self.path());
         let mut script = Command::new(&self.path)
-            .args(&self.args.pack())
-            .envs(self.envs.pack())
+            .args(&args)
+            .envs(envs)
             .spawn()
             .unwrap();
         match script.wait_timeout(timeout).unwrap() {

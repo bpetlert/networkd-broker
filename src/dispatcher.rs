@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use log::{debug, info, warn};
 
@@ -8,7 +8,7 @@ use dbus::{
 };
 
 use crate::{
-    environment::{Environments, ScriptEnvironment},
+    environment::Environments,
     error::AppError,
     launcher::Launcher,
     link::{Link, LinkEvent},
@@ -62,7 +62,7 @@ impl Dispatcher {
                     debug!("{:#?}", link_event);
 
                     // Convert link index to link name.
-                    let links = match Link::link_list() {
+                    let link_list = match Link::link_list() {
                         Ok(l) => l,
                         Err(_) => {
                             warn!("Cannot get iface name");
@@ -70,15 +70,18 @@ impl Dispatcher {
                         }
                     };
 
-                    let iface = match links.get(&link_event.index().unwrap()) {
-                        Some(link) => &link.iface,
+                    let link = match link_list.get(&link_event.index().unwrap()) {
+                        Some(l) => l,
                         None => {
                             warn!("Cannot get iface name");
                             continue;
                         }
                     };
 
-                    info!("Respond to '{}' event of '{}'", &link_event.state, &iface);
+                    info!(
+                        "Respond to '{}' event of '{}'",
+                        &link_event.state, &link.iface
+                    );
 
                     // Get all scripts associated with current event
                     let state_dir = format!("{}.d", link_event.state.to_string());
@@ -96,20 +99,24 @@ impl Dispatcher {
                         Err(_) => continue,
                     };
 
+                    // Build script's arguments
+                    let mut args = Arguments::new();
+                    args.state(&link_event.state).iface(&link.iface);
+                    let shared_args = Arc::new(args);
+
+                    // Fetch status of iface
+                    let status = link.status().unwrap();
+
+                    // Pack all event-related environments.
+                    let mut envs = Environments::new();
+                    envs.extract_from(&link_event, link, status, self.json);
+                    let shared_envs = Arc::new(envs);
+
                     // Push scripts with args + envs to launcher's queue.
                     for mut s in scripts {
-                        // Build script's arguments
-                        let mut args = Arguments::new();
-                        args.state(&link_event.state).iface(iface);
-
-                        // TODO: Pack all event-related environments.
-                        let mut envs = Environments::new();
-                        envs.add(ScriptEnvironment::DeviceIface, iface).add(
-                            ScriptEnvironment::DispatcherAction,
-                            link_event.state.to_string(),
-                        );
-
-                        s.args(args).envs(envs).timeout(self.timeout);
+                        s.args(Some(shared_args.clone()))
+                            .envs(Some(shared_envs.clone()))
+                            .timeout(self.timeout);
                         launcher.add(s);
                     }
                 }
