@@ -164,7 +164,7 @@ impl Script {
             .filter_map(|e| e.ok())
         {
             let metadata = entry.metadata().unwrap();
-            if !metadata.is_file() {
+            if metadata.is_dir() {
                 continue;
             }
 
