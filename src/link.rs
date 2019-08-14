@@ -15,7 +15,7 @@ use crate::{
     extcommand::ExtCommand,
 };
 
-#[derive(Debug, PartialEq, EnumString, Display)]
+#[derive(Debug, Clone, PartialEq, EnumString, Display)]
 pub enum StateType {
     /// 'AdministrativeState' field of DBus signal message
     /// or 'SETUP' field of 'networkctl list'
@@ -31,7 +31,7 @@ pub enum StateType {
 /// Operational status
 ///
 /// Taken from networkctl's man page
-#[derive(Debug, PartialEq, EnumString, Display)]
+#[derive(Debug, Clone, PartialEq, EnumString, Display)]
 pub enum OperationalStatus {
     #[strum(serialize = "n/a")]
     NotAvailable,
@@ -160,9 +160,20 @@ impl LinkEvent<'_> {
             Err(_) => Err(AppError::LinkToIndex),
         }
     }
+
+    pub fn index_to_dbus_path(idx: u8) -> String {
+        let idx_str: String = idx.to_string();
+        let chars: Vec<&str> = idx_str.split("").collect();
+        let first_part: u8 = chars[1].as_bytes()[0];
+        format!(
+            "/org/freedesktop/network1/link/_{:x}{}",
+            first_part,
+            chars[2..].join("")
+        )
+    }
 }
 
-#[derive(Debug, PartialEq, EnumString, Display)]
+#[derive(Debug, Clone, PartialEq, EnumString, Display)]
 pub enum LinkType {
     #[strum(serialize = "loopback")]
     Loopback,
@@ -302,5 +313,20 @@ mod tests {
 
         link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_310").unwrap();
         assert_eq!(link_event.index().unwrap(), 10);
+    }
+
+    #[test]
+    fn test_to_dbus_path() {
+        let dbus_path = LinkEvent::index_to_dbus_path(1);
+        assert_eq!(dbus_path, "/org/freedesktop/network1/link/_31");
+
+        let dbus_path = LinkEvent::index_to_dbus_path(2);
+        assert_eq!(dbus_path, "/org/freedesktop/network1/link/_32");
+
+        let dbus_path = LinkEvent::index_to_dbus_path(3);
+        assert_eq!(dbus_path, "/org/freedesktop/network1/link/_33");
+
+        let dbus_path = LinkEvent::index_to_dbus_path(10);
+        assert_eq!(dbus_path, "/org/freedesktop/network1/link/_310");
     }
 }

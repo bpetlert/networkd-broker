@@ -3,7 +3,7 @@ use std::{env, io::Write};
 use structopt::StructOpt;
 
 use env_logger::Builder;
-use log::{debug, LevelFilter};
+use log::{debug, info, LevelFilter};
 
 mod dispatcher;
 mod environment;
@@ -59,15 +59,15 @@ fn main() {
         .format(|buf, record| writeln!(buf, "{}: {}", record.level(), record.args()))
         .filter(None, log_level)
         .init();
-    debug!("Start with {:#?}", opt);
+    debug!("Start program with {:?}", opt);
 
-    let dispatcher = Dispatcher::new(
-        opt.script_dir,
-        opt.run_startup_triggers,
-        opt.timeout,
-        opt.json,
-        opt.verbose,
-    );
-    debug!("Start dispatcher with {:#?}", dispatcher);
+    let dispatcher = Dispatcher::new(opt.script_dir, opt.timeout, opt.json, opt.verbose);
+    debug!("Start dispatcher with {:?}", dispatcher);
+
+    if opt.run_startup_triggers {
+        info!("Execute all scripts for the current state for each interface");
+        dispatcher.trigger_all();
+    }
+
     dispatcher.listen();
 }
