@@ -109,7 +109,7 @@ impl Dispatcher {
                             link_event.state.to_string(),
                         );
 
-                        s.args(args).envs(envs);
+                        s.args(args).envs(envs).timeout(self.timeout);
                         launcher.add(s);
                     }
                 }
