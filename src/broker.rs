@@ -17,7 +17,7 @@ use crate::{
 
 /// A responder manages link event
 #[derive(Debug)]
-pub struct Dispatcher {
+pub struct Broker {
     script_dir: PathBuf,
     timeout: u64,
     json: bool,
@@ -25,15 +25,15 @@ pub struct Dispatcher {
     launcher: Launcher,
 }
 
-impl Dispatcher {
-    pub fn new<P>(script_dir: P, timeout: u64, json: bool, verbose: u8) -> Dispatcher
+impl Broker {
+    pub fn new<P>(script_dir: P, timeout: u64, json: bool, verbose: u8) -> Broker
     where
         P: Into<PathBuf>,
     {
         // Start script launcher
         let launcher = Launcher::new();
 
-        Dispatcher {
+        Broker {
             script_dir: script_dir.into(),
             timeout,
             json,

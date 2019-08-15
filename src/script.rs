@@ -238,11 +238,11 @@ mod tests {
     #[test]
     fn test_script_new() {
         // Normal script
-        let script = Script::new("/etc/networkd/dispatchd.d/carrier.d/00-script");
+        let script = Script::new("/etc/networkd/broker.d/carrier.d/00-script");
         assert!(!script.no_wait);
 
         // No-wait script
-        let script = Script::new("/etc/networkd/dispatchd.d/carrier.d/00-script-nowait");
+        let script = Script::new("/etc/networkd/broker.d/carrier.d/00-script-nowait");
         assert!(script.no_wait);
     }
 
@@ -250,7 +250,7 @@ mod tests {
     fn test_get_scripts_in() {
         let temp_dir = setup_get_scripts_in();
         // setup_helper_inspect_output(temp_dir.path());
-        let dispatched_root = temp_dir.path().join("etc/networkd/dispatcherd.d");
+        let broker_root = temp_dir.path().join("etc/networkd/broker.d");
         let uid = get_current_uid();
         let gid = get_current_gid();
 
@@ -258,7 +258,7 @@ mod tests {
         // 00-executable
         // 05-executable-nowait
         // 10-executable
-        let carrier_d = dispatched_root.join("carrier.d");
+        let carrier_d = broker_root.join("carrier.d");
         let scripts = Script::get_scripts_in(&carrier_d, Some(uid), Some(gid)).unwrap();
         assert_eq!(scripts.len(), 3);
         assert_eq!(
@@ -275,17 +275,17 @@ mod tests {
         );
 
         // No script for configuring state
-        let configuring_d = dispatched_root.join("configuring.d");
+        let configuring_d = broker_root.join("configuring.d");
         let scripts = Script::get_scripts_in(&configuring_d, Some(uid), Some(gid)).unwrap_err();
         assert_eq!(scripts, AppError::NoScriptFound);
 
         // No script for root in degraded.d
-        let degraded_d = dispatched_root.join("degraded.d");
+        let degraded_d = broker_root.join("degraded.d");
         let scripts = Script::get_scripts_in(&degraded_d, None, None).unwrap_err();
         assert_eq!(scripts, AppError::NoScriptFound);
 
         // No directory for routable state
-        let routable_d = dispatched_root.join("routable.d");
+        let routable_d = broker_root.join("routable.d");
         let scripts = Script::get_scripts_in(&routable_d, Some(uid), Some(gid)).unwrap_err();
         assert_eq!(scripts, AppError::NoPathFound);
     }
@@ -294,13 +294,13 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         assert!(temp_dir.path().to_owned().exists());
 
-        // Create dispatch root directory
-        let dispatched_root = temp_dir.path().join("etc/networkd/dispatcherd.d");
+        // Create broker root directory
+        let broker_root = temp_dir.path().join("etc/networkd/broker.d");
         DirBuilder::new()
             .recursive(true)
-            .create(&dispatched_root)
+            .create(&broker_root)
             .unwrap();
-        assert!(fs::metadata(&dispatched_root).unwrap().is_dir());
+        assert!(fs::metadata(&broker_root).unwrap().is_dir());
 
         // Create directory for each state
         for path in [
@@ -315,13 +315,13 @@ mod tests {
         ]
         .iter()
         {
-            let state_dir = &dispatched_root.join(path);
+            let state_dir = &broker_root.join(path);
             DirBuilder::new().create(&state_dir).unwrap();
             assert!(fs::metadata(&state_dir).unwrap().is_dir());
         }
 
         // Create dummy scripts for current uid/gid
-        let carrier_d = &dispatched_root.join("carrier.d");
+        let carrier_d = &broker_root.join("carrier.d");
         for (script, executable) in [
             ("00-executable", true),
             ("01-non-executable", false),
@@ -342,7 +342,7 @@ mod tests {
         }
 
         // Create dummy scripts for current uid/gid
-        let degraded_d = &dispatched_root.join("degraded.d");
+        let degraded_d = &broker_root.join("degraded.d");
         for (script, executable) in [
             ("00-non-root-executable", true),
             ("01-non-root-non-executable", false),

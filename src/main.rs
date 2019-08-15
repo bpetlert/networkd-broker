@@ -5,7 +5,7 @@ use structopt::StructOpt;
 use env_logger::Builder;
 use log::{debug, info, LevelFilter};
 
-mod dispatcher;
+mod broker;
 mod environment;
 mod error;
 mod extcommand;
@@ -13,16 +13,16 @@ mod launcher;
 mod link;
 mod script;
 
-use crate::dispatcher::Dispatcher;
+use crate::broker::Broker;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "networkd-dispatcherd", about = "networkd dispatcher daemon")]
+#[structopt(name = "networkd-broker", about = "networkd event broker daemon")]
 struct Opt {
     /// Location under which to look for scripts
     #[structopt(
         short = "S",
         long = "script-dir",
-        default_value = "/etc/networkd/dispatcher.d"
+        default_value = "/etc/networkd/broker.d"
     )]
     script_dir: String,
 
@@ -55,19 +55,19 @@ fn main() {
         _ => LevelFilter::Trace,
     };
     Builder::new()
-        .parse_filters(&env::var("NETWORKD_DISPATCHERD_LOG").unwrap_or_default())
+        .parse_filters(&env::var("NETWORKD_BROKER_LOG").unwrap_or_default())
         .format(|buf, record| writeln!(buf, "{}: {}", record.level(), record.args()))
         .filter(None, log_level)
         .init();
     debug!("Start program with {:?}", opt);
 
-    let dispatcher = Dispatcher::new(opt.script_dir, opt.timeout, opt.json, opt.verbose);
-    debug!("Start dispatcher with {:?}", dispatcher);
+    let broker = Broker::new(opt.script_dir, opt.timeout, opt.json, opt.verbose);
+    debug!("Start event broker with {:?}", broker);
 
     if opt.run_startup_triggers {
         info!("Execute all scripts for the current state for each interface");
-        dispatcher.trigger_all();
+        broker.trigger_all();
     }
 
-    dispatcher.listen();
+    broker.listen();
 }

@@ -1,10 +1,10 @@
-@startuml networkd-dispatcherd
+@startuml networkd-broker
 
 skinparam BoxPadding 10
 
 participant DBus
-box "networkd-dispatchd" #LightBlue
-participant Dispatcher
+box "networkd-broker" #LightBlue
+participant Broker
 participant Script
 participant Environments
 participant Launcher
@@ -15,15 +15,15 @@ autonumber
 
 == Initialization ==
 Launcher -> Launcher ++ : recv
-Dispatcher -> Dispatcher ++ : listen
+Broker -> Broker ++ : listen
 
 == Receive Signal ==
-DBus -> Dispatcher ++ : signal
-Dispatcher -> Script ++ : get script list
+DBus -> Broker ++ : signal
+Broker -> Script ++ : get script list
 return script list
-Dispatcher -> Environments ++ : fetch env
+Broker -> Environments ++ : fetch env
 return env
-Dispatcher -> Launcher --: send script list to queue
+Broker -> Launcher --: send script list to queue
 Launcher -> System ++ : execute script
 return done
 

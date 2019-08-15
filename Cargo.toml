@@ -1,5 +1,5 @@
 [package]
-name = "networkd-dispatcherd"
+name = "networkd-broker"
 version = "0.1.0"
 authors = ["Bhanupong Petchlert <bpetlert@gmail.com>"]
 edition = "2018"

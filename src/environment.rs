@@ -14,8 +14,8 @@ pub enum ScriptEnvironment {
     #[strum(serialize = "NWD_DEVICE_IFACE")]
     DeviceIface,
 
-    #[strum(serialize = "NWD_DISPATCHER_ACTION")]
-    DispatcherAction,
+    #[strum(serialize = "NWD_BROKER_ACTION")]
+    BrokerAction,
 
     #[strum(serialize = "NWD_ESSID")]
     Essid,
@@ -120,9 +120,9 @@ impl Environments {
         self
             // NWD_DEVICE_IFACE
             .add(ScriptEnvironment::DeviceIface, &link.iface)
-            // NWD_DISPATCHER_ACTION
+            // NWD_BROKER_ACTION
             .add(
-                ScriptEnvironment::DispatcherAction,
+                ScriptEnvironment::BrokerAction,
                 link_event.state.to_string(),
             )
             // NWD_ESSID
@@ -214,6 +214,6 @@ mod tests {
         assert_eq!(pack.get("NWD_OPERATIONAL_STATE").unwrap(), "routable");
         assert_eq!(pack.get("NWD_ADMINISTRATIVE_STATE").unwrap(), "configured");
         assert_eq!(pack.get("NWD_ESSID").unwrap(), "Haven");
-        assert_eq!(pack.get("NWD_DISPATCHER_ACTION").unwrap(), "configured");
+        assert_eq!(pack.get("NWD_BROKER_ACTION").unwrap(), "configured");
     }
 }

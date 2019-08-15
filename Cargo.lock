@@ -239,7 +239,7 @@ version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "networkd-dispatcherd"
+name = "networkd-broker"
 version = "0.1.0"
 dependencies = [
  "dbus 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
