@@ -2,11 +2,14 @@
 pkgname=networkd-broker
 pkgver=20190816
 pkgrel=1
-pkgdesc=""
+pkgdesc="An event broker daemon for systemd-networkd"
 arch=('x86_64')
 url="https://github.com/bpetlert/networkd-broker"
 license=('MIT')
+depends=('systemd' 'iw')
 makedepends=('rust' 'cargo')
+provides=("${pkgname}")
+conflicts=("${pkgname}")
 
 # Build from local directory
 source=()
