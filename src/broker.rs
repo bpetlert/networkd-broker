@@ -7,6 +7,8 @@ use dbus::{
     {BusType, Connection, SignalArgs},
 };
 
+use libsystemd::daemon::{self, NotifyState};
+
 use crate::{
     environment::Environments,
     error::AppError,
@@ -47,6 +49,9 @@ impl Broker {
         let connection = Connection::get_private(BusType::System).unwrap();
         let matched_signal = PC::match_str(Some(&"org.freedesktop.network1".into()), None);
         connection.add_match(&matched_signal).unwrap();
+
+        // Notify systemd that we are ready :)
+        let _ = daemon::notify(false, &[NotifyState::Ready]);
 
         // Start DBus event loop
         info!("Listening for link event...");
