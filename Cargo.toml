@@ -7,7 +7,7 @@ documentation = "https://github.com/bpetlert/networkd-broker"
 homepage = "https://github.com/bpetlert/networkd-broker"
 repository = "https://github.com/bpetlert/networkd-broker"
 readme = "README.md"
-license = "MIT"
+license = "GPL3"
 edition = "2018"
 publish = false
 
