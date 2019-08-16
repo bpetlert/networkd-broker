@@ -183,6 +183,15 @@ pub enum LinkType {
 
     #[strum(serialize = "wlan")]
     Wlan,
+
+    #[strum(serialize = "wwan")]
+    Wwan,
+
+    #[strum(serialize = "wimax")]
+    Wimax,
+
+    #[strum(default = "true")]
+    Unknown(String),
 }
 
 #[derive(Debug, PartialEq)]
