@@ -17,7 +17,7 @@ impl Launcher {
         thread::spawn(move || loop {
             match rx.recv() {
                 Ok(script) => {
-                    script.execute().unwrap();
+                    let _ = script.execute();
                 }
                 Err(RecvError {}) => {}
             };
