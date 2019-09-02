@@ -4,8 +4,8 @@ use strum_macros::{Display, EnumString};
 
 use dbus::{
     arg::RefArg,
-    stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC,
-    {Message, MessageType, SignalArgs},
+    blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC,
+    {Message, MessageType, message::SignalArgs},
 };
 
 use serde_json::{Map, Value};

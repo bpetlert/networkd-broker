@@ -3,8 +3,8 @@ use std::{path::PathBuf, sync::Arc};
 use log::{debug, info, warn};
 
 use dbus::{
-    stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC,
-    {BusType, Connection, SignalArgs},
+    blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC,
+    {ffidisp::Connection, message::SignalArgs},
 };
 
 use libsystemd::daemon::{self, NotifyState};
@@ -46,7 +46,7 @@ impl Broker {
 
     pub fn listen(&self) {
         // Connect to DBus
-        let connection = Connection::get_private(BusType::System).unwrap();
+        let connection = Connection::new_system().unwrap();
         let matched_signal = PC::match_str(Some(&"org.freedesktop.network1".into()), None);
         connection.add_match(&matched_signal).unwrap();
 
