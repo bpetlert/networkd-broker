@@ -1,14 +1,8 @@
 # Networkd-broker
 
-The networkd-broker is an event broker daemon for systemd-networkd. It
-will execute scripts in the `/etc/networkd/broker.d/<STATE>.d` directory
-in alphabetical order in response to network events.
+The networkd-broker is an event broker daemon for systemd-networkd. It will execute scripts in the `/etc/networkd/broker.d/<STATE>.d` directory in alphabetical order in response to network events.
 
-This work is based on
-[networkd-dispatcher](https://gitlab.com/craftyguy/networkd-dispatcher),
-written in Rust, for the purpose of reducing runtime dependencies. This
-also helps reduce memory footprint (\~30MB ⟶ \~8MB) and improve startup
-time (\~30secs ⟶ \~1sec).
+This work is based on [networkd-dispatcher](https://gitlab.com/craftyguy/networkd-dispatcher), written in Rust, for the purpose of reducing runtime dependencies. This also helps reduce memory footprint (~30MB &longrightarrow; ~8MB) and improve startup time (~30secs &longrightarrow; ~1sec).
 
 ## Installation
 
@@ -16,7 +10,7 @@ time (\~30secs ⟶ \~1sec).
 
 Build and install arch package from source:
 
-``` bash
+```bash
 $ git clone https://github.com/bpetlert/networkd-broker.git
 ...
 $ cd networkd-broker
@@ -27,7 +21,7 @@ $ pacman -U networkd-broker-xxxx-1-x86_64.pkg.tar
 
 Then enable/start networkd-broker.service
 
-``` bash
+```bash
 $ systemctl enable networkd-broker.service
 ...
 $ systemctl start networkd-broker.service
@@ -37,12 +31,12 @@ $ systemctl start networkd-broker.service
 
 To change the options of networkd-broker service, run:
 
-``` bash
+```bash
 $ systemctl edit networkd-broker.service`
 ...
 ```
 
-``` ini
+```ini
 /etc/systemd/system/networkd-broker.service.d/override.conf
 -------------------------------------------------------------------------
 
@@ -52,32 +46,26 @@ Environment='NETWORKD_BROKER_ARGS=-vv --json'
 
 Supported options are:
 
-  - `-j`, `--json` Pass JSON encoding of event and link status to
-    script.
-  - `-T`, `--run-startup-triggers` Generate events reflecting
-    preexisting state and behavior on startup.
-  - `-v`, `--verbose` Increment verbosity level once per call. Default
-    is showing error.
-      - `-v`: warn
-      - `-vv`: info
-      - `-vvv`: debug
-      - `-vvvv`: trace
-  - `-S`, `--script-dir <script_dir>` Location under which to look for
-    scripts. The default location is `/etc/networkd/broker.d`.
-  - `-t`, `--timeout <timeout>` Script execution timeout in seconds.
-    Default is 20 seconds.
+- `-j`, `--json`
+  Pass JSON encoding of event and link status to script.
+- `-T`, `--run-startup-triggers`
+  Generate events reflecting preexisting state and behavior on startup.
+- `-v`, `--verbose`
+  Increment verbosity level once per call. Default is showing error.
+  - `-v`: warn
+  - `-vv`: info
+  - `-vvv`: debug
+  - `-vvvv`: trace
+- `-S`, `--script-dir <script_dir>`
+  Location under which to look for scripts. The default location is `/etc/networkd/broker.d`.
+- `-t`, `--timeout <timeout>`
+  Script execution timeout in seconds. Default is 20 seconds.
 
 ## Usage
 
-The scripts for any network event need to be putted (or symlink) in its
-corresponding directory as shown below. Each script must be a regular
-executable file owned by root. The default execution timeout of each
-script is 20 seconds. It can be overridden by `--timeout` option in
-service configuration. Any of the scripts which end with '-nowait' is
-run immediately, without waitting for the termination of previous
-scripts.
+The scripts for any network event need to be putted (or symlink) in its corresponding directory as shown below. Each script must be a regular executable file owned by root. The default execution timeout of each script is 20 seconds. It can be overridden by `--timeout` option in service configuration. Any of the scripts which end with '-nowait' is run immediately, without waitting for the termination of previous scripts.
 
-``` bash
+```bash
 /etc/networkd
 └── broker.d
     ├── carrier.d
@@ -92,9 +80,7 @@ scripts.
     └── unmanaged.d
 ```
 
-The scripts are run in alphabetical order, one at a time with two
-arguments and a set of environment variables being passed. Each script
-run asynchronously from `networkd-broker` process.
+The scripts are run in alphabetical order, one at a time with two arguments and a set of environment variables being passed. Each script run asynchronously from `networkd-broker` process.
 
 | Argument | Description                                                                                                                                                                                                       |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -117,13 +103,9 @@ The following environment variables are being passed to each script:
 
 ### Example script
 
-The script below activate/deactivate
-[Chrony](https://wiki.archlinux.org/index.php/Chrony) correspond to
-operation state of wlp3s0 link. This script must be putted (or symlink)
-in `/etc/networkd/broker.d/configured.d` and
-`/etc/networkd/broker.d/dormant.d`.
+The script below activate/deactivate [Chrony](https://wiki.archlinux.org/index.php/Chrony) correspond to operation state of wlp3s0 link. This script must be putted (or symlink) in `/etc/networkd/broker.d/configured.d` and `/etc/networkd/broker.d/dormant.d`.
 
-``` bash
+```bash
 #!/usr/bin/env bash
 
 STATE=$1
@@ -148,25 +130,25 @@ fi
 
 ## License
 
-[networkd-notify](https://github.com/wavexx/networkd-notify):  
+[networkd-notify](https://github.com/wavexx/networkd-notify):\
 Copyright (c) 2016 [Yuri D'Elia](wavexx@thregr.org)
 
-[networkd-dispatcher](https://gitlab.com/craftyguy/networkd-dispatcher):  
+[networkd-dispatcher](https://gitlab.com/craftyguy/networkd-dispatcher):\
 Copyright (c) 2018 [Clayton Craft](clayton@craftyguy.net)
 
-[networkd-broker](https://github.com/bpetlert/networkd-broker):  
+[networkd-broker](https://github.com/bpetlert/networkd-broker):\
 Copyright (c) 2019 [Bhanupong Petchlert](bpetlert@gmail.com)
 
-**[GNU GPLv3](./LICENSE)**  
-This program is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License, or (at your
-option) any later version.
+**[GNU GPLv3](./LICENSE)**\
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
-Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along
-with this program. If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.

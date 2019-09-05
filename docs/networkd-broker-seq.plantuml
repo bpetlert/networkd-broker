@@ -1,9 +1,14 @@
 @startuml networkd-broker
 
+skinparam defaultFontName "FuraCode Nerd Font"
+skinparam defaultFontSize 13
+skinparam defaultFontColor black
+skinparam BackgroundColor Azure
 skinparam BoxPadding 10
+skinparam shadowing false
 
 participant DBus
-box "networkd-broker" #LightBlue
+box "networkd-broker" #DeepSkyBlue
 participant Broker
 participant Script
 participant Environments
