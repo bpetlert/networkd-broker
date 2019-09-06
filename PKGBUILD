@@ -1,6 +1,6 @@
 # Maintainer: Bhanupong Petchlert <bpetlert@gmail.com>
 pkgname=networkd-broker
-pkgver=20190816
+pkgver=0.1.0.r0.g2245859
 pkgrel=1
 pkgdesc="An event broker daemon for systemd-networkd"
 arch=('x86_64')
@@ -18,11 +18,6 @@ source=()
 pkgver() {
   cd "$startdir"
   git describe --long --tags | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
-}
-
-# Fallback
-pkgver() {
-  date +%Y%m%d
 }
 
 build() {
