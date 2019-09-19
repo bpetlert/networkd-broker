@@ -180,7 +180,10 @@ impl ExtCommand {
                     }) {
                         let key: String = key.as_str().to_owned().replace(char::is_whitespace, "");
                         last_insert_key = key.clone();
-                        status.insert(key, Value::String(value.as_str().to_owned()));
+                        status.insert(
+                            key,
+                            Value::String(value.as_str().trim_start().trim_end().to_owned()),
+                        );
                     }
                     return;
                 }
@@ -194,12 +197,16 @@ impl ExtCommand {
                         if let Some(last_insert_value) = status.get_mut(&last_insert_key) {
                             match last_insert_value {
                                 Value::Array(v) => {
-                                    v.push(Value::String(extra_value.as_str().to_owned()));
+                                    v.push(Value::String(
+                                        extra_value.as_str().trim_start().trim_end().to_owned(),
+                                    ));
                                 }
                                 Value::String(s) => {
                                     *last_insert_value = Value::Array(vec![
                                         Value::String(s.clone()),
-                                        Value::String(extra_value.as_str().to_owned()),
+                                        Value::String(
+                                            extra_value.as_str().trim_start().trim_end().to_owned(),
+                                        ),
                                     ]);
                                 }
                                 _ => {}
@@ -219,8 +226,10 @@ impl ExtCommand {
                         }
 
                         if let Some(link) = cap.name("link") {
-                            status
-                                .insert("Link".to_owned(), Value::String(link.as_str().to_owned()));
+                            status.insert(
+                                "Link".to_owned(),
+                                Value::String(link.as_str().trim_start().trim_end().to_owned()),
+                            );
                         }
                     }
                     return;
@@ -271,7 +280,7 @@ mod tests {
     #[test]
     fn test_call_networkctl_status() {
         let info = ExtCommand::call_networkctl_status("lo").unwrap();
-        assert_eq!(info.len(), 7);
+        assert_eq!(info.len(), 9);
 
         let err = ExtCommand::call_networkctl_status("LinkToOtherWorlds").unwrap_err();
         assert_eq!(err, AppError::LinkNotExist);
@@ -288,7 +297,7 @@ mod tests {
 
     #[test]
     fn test_parse_networkctl_list() {
-        let networkctl_list = include_str!("networkctl_list.test");
+        let networkctl_list = include_str!("networkctl_list_test.raw");
         let link_list =
             ExtCommand::parse_networkctl_list(networkctl_list.as_bytes().to_vec()).unwrap();
         assert_eq!(link_list.len(), 3);
@@ -330,36 +339,36 @@ mod tests {
     #[test]
     fn test_parse_networkctl_status() {
         // Test link 1: lo
-        let networkctl_status1 = include_str!("networkctl_status_1.test");
+        let networkctl_status1 = include_str!("networkctl_status_test_1.raw");
         let status1 =
             ExtCommand::parse_networkctl_status(networkctl_status1.as_bytes().to_vec()).unwrap();
-        assert_eq!(status1.len(), 7);
+        assert_eq!(status1.len(), 9);
 
-        let networkctl_status1_json = include_str!("networkctl_status_1_json.test");
+        let networkctl_status1_json = include_str!("networkctl_status_test_1.json");
         let output1_json: Value = serde_json::from_str(networkctl_status1_json).unwrap();
         let status1_value: Value =
             serde_json::from_str(serde_json::to_string(&status1).unwrap().as_str()).unwrap();
         assert_eq!(&status1_value, &output1_json);
 
         // Test link 2: wlp3s0
-        let networkctl_status2 = include_str!("networkctl_status_2.test");
+        let networkctl_status2 = include_str!("networkctl_status_test_2.raw");
         let status2 =
             ExtCommand::parse_networkctl_status(networkctl_status2.as_bytes().to_vec()).unwrap();
-        assert_eq!(status2.len(), 15);
+        assert_eq!(status2.len(), 17);
 
-        let networkctl_status2_json = include_str!("networkctl_status_2_json.test");
+        let networkctl_status2_json = include_str!("networkctl_status_test_2.json");
         let output2_json: Value = serde_json::from_str(networkctl_status2_json).unwrap();
         let status2_value: Value =
             serde_json::from_str(serde_json::to_string(&status2).unwrap().as_str()).unwrap();
         assert_eq!(&status2_value, &output2_json);
 
         // Test link 3: enp6s0
-        let networkctl_status3 = include_str!("networkctl_status_3.test");
+        let networkctl_status3 = include_str!("networkctl_status_test_3.raw");
         let status3 =
             ExtCommand::parse_networkctl_status(networkctl_status3.as_bytes().to_vec()).unwrap();
-        assert_eq!(status3.len(), 11);
+        assert_eq!(status3.len(), 16);
 
-        let networkctl_status3_json = include_str!("networkctl_status_3_json.test");
+        let networkctl_status3_json = include_str!("networkctl_status_test_3.json");
         let output3_json: Value = serde_json::from_str(networkctl_status3_json).unwrap();
         let status3_value: Value =
             serde_json::from_str(serde_json::to_string(&status3).unwrap().as_str()).unwrap();

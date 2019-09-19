@@ -10,12 +10,14 @@
   "Vendor": "Intel Corporation",
   "Model": "Centrino Advanced-N 6205 [Taylor Peak] (Centrino Advanced-N 6205 AGN)",
   "HWAddress": "de:6d:67:a0:22:10 (Intel Corporate)",
+  "MTU": "1500 (min: 256, max: 2304)",
+  "QueueLength(Tx/Rx)": "4/1",
   "Address": [
     "192.168.1.106",
     "fb62:bfa:cbf7:0:7be3:1dcf:fddb:9e25",
     "fd70::7be3:1dcf:fddb:9e25"
   ],
-  "Gateway": "192.168.1.254",
-  "DNS": ["192.168.1.254", "fb62:bfa:cbf7::1"],
+  "Gateway": ["192.168.1.254", "fe80::1491:82ff:feba:1774"],
+  "DNS": "192.168.1.254",
   "SearchDomains": "lan"
 }

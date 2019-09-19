@@ -9,5 +9,10 @@
   "Driver": "atl1c",
   "Vendor": "Qualcomm Atheros",
   "Model": "AR8161 Gigabit Ethernet",
-  "HWAddress": "66:3b:76:9c:31:1f (Dell Inc.)"
+  "HWAddress": "66:3b:76:9c:31:1f (Dell Inc.)",
+  "MTU": "1500 (min: 42, max: 6122)",
+  "QueueLength(Tx/Rx)": "1/1",
+  "Autonegotiation": "yes",
+  "Speed": "n/a",
+  "Port": "tp"
 }

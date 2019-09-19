@@ -1,2 +1,2 @@
 (?x)
-^\x20{18}(?P<extra_value>.*)
+^\x20{24}(?P<extra_value>.*)

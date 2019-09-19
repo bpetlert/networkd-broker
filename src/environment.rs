@@ -189,7 +189,7 @@ mod tests {
             .operational(OperationalStatus::Routable)
             .setup(OperationalStatus::Configured);
 
-        let networkctl_status2 = include_str!("networkctl_status_2.test");
+        let networkctl_status2 = include_str!("networkctl_status_test_2.raw");
         let mut status2 =
             ExtCommand::parse_networkctl_status(networkctl_status2.as_bytes().to_vec()).unwrap();
         status2.insert("Ssid".to_owned(), Value::String("Haven".to_owned()));

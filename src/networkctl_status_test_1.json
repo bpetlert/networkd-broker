@@ -5,5 +5,7 @@
   "NetworkFile": "n/a",
   "Type": "loopback",
   "State": "carrier (unmanaged)",
+  "MTU": "65536",
+  "QueueLength(Tx/Rx)": "1/1",
   "Address": ["127.0.0.1", "::1"]
 }
