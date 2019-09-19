@@ -1,6 +1,6 @@
 # Maintainer: Bhanupong Petchlert <bpetlert@gmail.com>
 pkgname=networkd-broker
-pkgver=0.1.0.r0.g2245859
+pkgver=0.1.1.r0.g79dae36
 pkgrel=1
 pkgdesc="An event broker daemon for systemd-networkd"
 arch=('x86_64')
@@ -14,10 +14,10 @@ conflicts=("${pkgname}")
 # Build from local directory
 source=()
 
-# Using the most recent un-annotated tag reachable from the last commit.
+# Using the most recent annotated tag reachable from the last commit.
 pkgver() {
   cd "$startdir"
-  git describe --long --tags | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
+  git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
 }
 
 build() {
