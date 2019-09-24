@@ -1,6 +1,6 @@
 # Maintainer: Bhanupong Petchlert <bpetlert@gmail.com>
 pkgname=networkd-broker
-pkgver=0.1.1.r0.g79dae36
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="An event broker daemon for systemd-networkd"
 arch=('x86_64')
@@ -24,11 +24,11 @@ build() {
   cd "$startdir"
 
   # Ignore target_dir in ~/.cargo/config, use BUILDDIR from makepkg instead
-  CARGO_TARGET_DIR="$srcdir/../target" cargo build --release --locked
+  CARGO_TARGET_DIR="$srcdir/target" cargo build --release --locked
 }
 
 package() {
-  cd "$srcdir/../"
+  cd "$srcdir"
   install -Dm755 "target/release/networkd-broker" "$pkgdir/usr/bin/networkd-broker"
 
   install -Dm644 "$startdir/networkd-broker.service" "$pkgdir/usr/lib/systemd/system/networkd-broker.service"
