@@ -20,7 +20,7 @@ Build and install arch package from source:
 $ git clone https://github.com/bpetlert/networkd-broker.git
 ...
 $ cd networkd-broker
-$ makepkg
+$ makepkg -p PKGBUILD.local
 ...
 $ pacman -U networkd-broker-xxxx-1-x86_64.pkg.tar
 ```
