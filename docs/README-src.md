@@ -1,5 +1,7 @@
 # Networkd-broker
 
+[![Release](https://img.shields.io/github/v/tag/bpetlert/networkd-broker?include_prereleases&label=release&style=flat-square)](https://github.com/bpetlert/networkd-broker/releases/latest) [![License: MIT](https://img.shields.io/github/license/bpetlert/networkd-broker?style=flat-square)](./LICENSE)
+
 The networkd-broker is an event broker daemon for systemd-networkd. It will execute scripts in the `/etc/networkd/broker.d/<STATE>.d` directory in alphabetical order in response to network events.
 
 This work is based on [networkd-dispatcher](https://gitlab.com/craftyguy/networkd-dispatcher), written in Rust, for the purpose of reducing runtime dependencies. This also helps reduce memory footprint (~30MB &longrightarrow; ~8MB) and improve startup time (~30secs &longrightarrow; ~1sec).
