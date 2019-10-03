@@ -1,19 +1,15 @@
-use std::{collections::HashMap, str::FromStr};
-
-use strum_macros::{Display, EnumString};
-
+use crate::{
+    error::{Error, Result},
+    extcommand::ExtCommand,
+};
 use dbus::{
     arg::RefArg,
     blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC,
-    {Message, MessageType, message::SignalArgs},
+    message::{Message, MessageType, SignalArgs},
 };
-
 use serde_json::{Map, Value};
-
-use crate::{
-    error::{AppError, Result},
-    extcommand::ExtCommand,
-};
+use std::{collections::HashMap, str::FromStr};
+use strum_macros::{Display, EnumString};
 
 #[derive(Debug, Clone, PartialEq, EnumString, Display)]
 pub enum StateType {
@@ -91,28 +87,28 @@ impl LinkEvent<'_> {
     /// Extract link event from DBus signal message
     pub fn from_message(msg: &Message) -> Result<Box<LinkEvent>> {
         if msg.msg_type() != MessageType::Signal {
-            return Err(AppError::NotSignal);
+            return Err(Error::not_dbus_signal(msg.msg_type()));
         }
 
         if &*msg.interface().unwrap() != "org.freedesktop.DBus.Properties" {
-            return Err(AppError::NotDBusProperties);
+            return Err(Error::not_dbus_properties(&*msg.interface().unwrap()));
         }
 
         if let Some(pc) = PC::from_message(&msg) {
             if pc.interface_name != "org.freedesktop.network1.Link" {
-                return Err(AppError::NotLinkEvent);
+                return Err(Error::not_link_event(pc.interface_name));
             }
 
             let (state_type, state) = pc.changed_properties.iter().next().unwrap();
 
             let st = match StateType::from_str(state_type.as_ref()) {
                 Ok(st) => st,
-                Err(_) => return Err(AppError::InvalidStateType),
+                Err(e) => return Err(Error::invalid_state_type(e)),
             };
 
             let s = match OperationalStatus::from_str(state.as_str().unwrap()) {
                 Ok(s) => s,
-                Err(_) => return Err(AppError::InvalidOperationalStatus),
+                Err(e) => return Err(Error::invalid_operational_status(e)),
             };
 
             return Ok(Box::new(LinkEvent {
@@ -122,7 +118,7 @@ impl LinkEvent<'_> {
             }));
         }
 
-        Err(AppError::CannotConvertEventMessage)
+        Err(Error::cannot_convert_event_message(&msg))
     }
 
     /// Convert DBus path to network interface index
@@ -140,24 +136,24 @@ impl LinkEvent<'_> {
     pub fn index(&self) -> Result<u8> {
         let components = self.path.split('/').collect::<Vec<&str>>();
         if components.len() != 6 {
-            return Err(AppError::LinkToIndex);
+            return Err(Error::link_to_index(&self.path));
         }
 
         let escaped_index = components.last().unwrap();
         if escaped_index.len() < 3 {
-            return Err(AppError::LinkToIndex);
+            return Err(Error::link_to_index(&self.path));
         }
 
         let first_char: char = match u8::from_str_radix(&escaped_index[1..3], 16) {
             Ok(c) => c as char,
-            Err(_) => return Err(AppError::LinkToIndex),
+            Err(e) => return Err(Error::link_to_index(e)),
         };
 
         let the_rest = &escaped_index[3..];
         let index: String = first_char.to_string() + the_rest;
         match index.parse::<u8>() {
             Ok(i) => Ok(i),
-            Err(_) => Err(AppError::LinkToIndex),
+            Err(e) => Err(Error::link_to_index(e)),
         }
     }
 
@@ -254,13 +250,17 @@ impl Link {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::ErrorKind;
 
     #[test]
     fn test_link_event_from_message_with_invalid_msg() {
         // Non signal message
         let msg = Message::new_method_call("org.test.rust", "/", "org.test.rust", "Test").unwrap();
         let link = LinkEvent::from_message(&msg);
-        assert_eq!(link.unwrap_err(), AppError::NotSignal);
+        assert_eq!(
+            link.unwrap_err().kind,
+            ErrorKind::NotDBusSignal(MessageType::MethodCall)
+        );
 
         // Invalid interface 'org.freedesktop.DBus.Properties'
         let msg = Message::new_signal(
@@ -270,7 +270,10 @@ mod tests {
         )
         .unwrap();
         let link = LinkEvent::from_message(&msg);
-        assert_eq!(link.unwrap_err(), AppError::NotDBusProperties);
+        assert_eq!(
+            link.unwrap_err().kind,
+            ErrorKind::NotDBusProperties("org.freedesktop.DBus".to_string())
+        );
 
         // TODO: Test invalid "org.freedesktop.network1.Link"
 
@@ -286,7 +289,10 @@ mod tests {
         )
         .unwrap();
         let link = LinkEvent::from_message(&msg);
-        assert_eq!(link.unwrap_err(), AppError::CannotConvertEventMessage);
+        assert_eq!(
+            link.unwrap_err().kind,
+            ErrorKind::CannotConvertEventMessage(format!("{:?}", &msg))
+        );
     }
 
     #[test]
@@ -303,10 +309,16 @@ mod tests {
             state_type: StateType::OperationalState,
             state: OperationalStatus::Off,
         };
-        assert_eq!(link_event.index().unwrap_err(), AppError::LinkToIndex);
+        assert_eq!(
+            link_event.index().unwrap_err().kind,
+            ErrorKind::LinkToIndex("/org/freedesktop/network1/link".to_string())
+        );
 
         link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_").unwrap();
-        assert_eq!(link_event.index().unwrap_err(), AppError::LinkToIndex);
+        assert_eq!(
+            link_event.index().unwrap_err().kind,
+            ErrorKind::LinkToIndex("/org/freedesktop/network1/link/_".to_string())
+        );
 
         link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_31").unwrap();
         assert_eq!(link_event.index().unwrap(), 1);

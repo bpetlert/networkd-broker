@@ -1,3 +1,9 @@
+use crate::{
+    environment::Environments,
+    error::{Error, Result},
+    link::OperationalStatus,
+};
+use log::{info, warn};
 use std::{
     collections::HashMap,
     os::unix::fs::MetadataExt,
@@ -6,18 +12,8 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-
 use wait_timeout::ChildExt;
-
 use walkdir::WalkDir;
-
-use log::{info, warn};
-
-use crate::{
-    environment::Environments,
-    error::{AppError, Result},
-    link::OperationalStatus,
-};
 
 #[derive(Debug)]
 pub struct Arguments {
@@ -101,10 +97,29 @@ impl Script {
     }
 
     pub fn execute(&self) -> Result<()> {
+        info!("Try to execute (nowait) {}", self.path());
         if self.no_wait {
-            self.execute_nowait()
+            match self.execute_nowait() {
+                Ok(_) => {
+                    info!("Executed (nowait) {}", self.path());
+                    Ok(())
+                }
+                Err(e) => {
+                    warn!("Execute failed {}", self.path());
+                    Err(e)
+                }
+            }
         } else {
-            self.execute_wait(self.timeout)
+            match self.execute_wait(self.timeout) {
+                Ok(_) => {
+                    info!("Executed {}", self.path());
+                    Ok(())
+                }
+                Err(e) => {
+                    warn!("Execute timeout {}", self.path());
+                    Err(e)
+                }
+            }
         }
     }
 
@@ -120,16 +135,9 @@ impl Script {
             None => &empty_envs,
         };
 
-        info!("Try to execute (nowait) {}", self.path());
         match Command::new(&self.path).args(&args).envs(envs).spawn() {
-            Ok(_) => {
-                info!("Executed (nowait) {}", self.path());
-                Ok(())
-            }
-            Err(_) => {
-                warn!("Execute failed {}", self.path());
-                Err(AppError::ExecuteFailed)
-            }
+            Ok(_) => Ok(()),
+            Err(e) => Err(Error::execute_failed(e)),
         }
     }
 
@@ -147,21 +155,17 @@ impl Script {
 
         let timeout = Duration::from_secs(secs);
 
-        info!("Try to execute {}", self.path());
         let mut script = Command::new(&self.path)
             .args(&args)
             .envs(envs)
             .spawn()
             .unwrap();
         match script.wait_timeout(timeout).unwrap() {
-            Some(_) => {
-                info!("Executed {}", self.path());
-                Ok(())
-            }
+            Some(_) => Ok(()),
             None => {
-                warn!("Execute timeout {}", self.path());
+                // script hasn't exited yet
                 script.kill().unwrap();
-                Err(AppError::Timeout)
+                Err(Error::execute_timeout(secs, &self.path))
             }
         }
     }
@@ -174,7 +178,7 @@ impl Script {
 
         // Path exists?
         if !path.exists() {
-            return Err(AppError::NoPathFound);
+            return Err(Error::path_not_exist(path));
         }
 
         let uid = uid.unwrap_or(0);
@@ -206,7 +210,7 @@ impl Script {
         }
 
         if scripts.is_empty() {
-            return Err(AppError::NoScriptFound);
+            return Err(Error::no_script_found(path));
         }
 
         Ok(scripts)
@@ -216,16 +220,14 @@ impl Script {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use crate::error::ErrorKind;
     use std::{
         ffi::OsStr,
         fs::{self, DirBuilder},
         io::{self, Write},
         os::unix::fs::OpenOptionsExt,
     };
-
     use tempfile::TempDir;
-
     use users::{get_current_gid, get_current_uid};
 
     #[test]
@@ -276,18 +278,27 @@ mod tests {
 
         // No script for configuring state
         let configuring_d = broker_root.join("configuring.d");
-        let scripts = Script::get_scripts_in(&configuring_d, Some(uid), Some(gid)).unwrap_err();
-        assert_eq!(scripts, AppError::NoScriptFound);
+        let err = Script::get_scripts_in(&configuring_d, Some(uid), Some(gid)).unwrap_err();
+        assert_eq!(
+            err.kind,
+            ErrorKind::NoScriptFound(format!("No script found in: {:?}", &configuring_d))
+        );
 
         // No script for root in degraded.d
         let degraded_d = broker_root.join("degraded.d");
-        let scripts = Script::get_scripts_in(&degraded_d, None, None).unwrap_err();
-        assert_eq!(scripts, AppError::NoScriptFound);
+        let err = Script::get_scripts_in(&degraded_d, None, None).unwrap_err();
+        assert_eq!(
+            err.kind,
+            ErrorKind::NoScriptFound(format!("No script found in: {:?}", &degraded_d))
+        );
 
         // No directory for routable state
         let routable_d = broker_root.join("routable.d");
-        let scripts = Script::get_scripts_in(&routable_d, Some(uid), Some(gid)).unwrap_err();
-        assert_eq!(scripts, AppError::NoPathFound);
+        let err = Script::get_scripts_in(&routable_d, Some(uid), Some(gid)).unwrap_err();
+        assert_eq!(
+            err.kind,
+            ErrorKind::PathNotExist(format!("Path does not exist: {:?}", &routable_d))
+        );
     }
 
     fn setup_get_scripts_in() -> tempfile::TempDir {

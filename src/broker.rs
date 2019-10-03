@@ -1,21 +1,16 @@
-use std::{path::PathBuf, sync::Arc};
-
-use log::{debug, info, warn};
-
-use dbus::{
-    blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC,
-    {ffidisp::Connection, message::SignalArgs},
-};
-
-use libsystemd::daemon::{self, NotifyState};
-
 use crate::{
     environment::Environments,
-    error::AppError,
     launcher::Launcher,
     link::{Link, LinkEvent, StateType},
     script::{Arguments, Script},
 };
+use dbus::{
+    blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC,
+    {ffidisp::Connection, message::SignalArgs},
+};
+use libsystemd::daemon::{self, NotifyState};
+use log::{debug, info, warn};
+use std::{path::PathBuf, sync::Arc};
 
 /// A responder manages link event
 #[derive(Debug)]
@@ -117,15 +112,10 @@ impl Broker {
         let script_path = self.script_dir.join(state_dir);
         let scripts = match Script::get_scripts_in(&script_path, None, None) {
             Ok(s) => s,
-            Err(AppError::NoPathFound) => {
-                info!("Path does not exist: {}", &script_path.to_str().unwrap());
+            Err(e) => {
+                info!("{}", e);
                 return;
             }
-            Err(AppError::NoScriptFound) => {
-                info!("No script found in: {}", &script_path.to_str().unwrap());
-                return;
-            }
-            Err(_) => return,
         };
 
         // Build script's arguments

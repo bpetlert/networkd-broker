@@ -1,14 +1,11 @@
-use std::{collections::HashMap, process::Command, str::FromStr};
-
-use lazy_static::lazy_static;
-use regex::{Regex, RegexSet, SetMatches};
-
-use serde_json::{Map, Number, Value};
-
 use crate::{
-    error::{AppError, Result},
+    error::{Error, Result},
     link::{Link, LinkType, OperationalStatus},
 };
+use lazy_static::lazy_static;
+use regex::{Regex, RegexSet, SetMatches};
+use serde_json::{Map, Number, Value};
+use std::{collections::HashMap, process::Command, str::FromStr};
 
 #[derive(Debug)]
 pub struct ExtCommand;
@@ -39,11 +36,14 @@ impl ExtCommand {
             .output()
         {
             Ok(o) => o,
-            Err(_) => return Err(AppError::CallNetworkctlFailed),
+            Err(e) => return Err(Error::call_networkctl_failed(e)),
         };
 
         if !output.status.success() {
-            return Err(AppError::CallNetworkctlFailed);
+            return Err(Error::call_networkctl_failed(format!(
+                "{:?}",
+                &output.stderr
+            )));
         }
 
         ExtCommand::parse_networkctl_list(output.stdout)
@@ -59,17 +59,18 @@ impl ExtCommand {
             .output()
         {
             Ok(o) => o,
-            Err(_) => {
-                return Err(AppError::CallNetworkctlFailed);
-            }
+            Err(e) => return Err(Error::call_networkctl_failed(e)),
         };
 
         if !output.status.success() {
-            return Err(AppError::CallNetworkctlFailed);
+            return Err(Error::call_networkctl_failed(format!(
+                "{:?}",
+                &output.stderr
+            )));
         }
 
         if output.stdout.is_empty() {
-            return Err(AppError::LinkNotExist);
+            return Err(Error::link_not_exist(iface.as_ref()));
         }
 
         ExtCommand::parse_networkctl_status(output.stdout)
@@ -84,24 +85,22 @@ impl ExtCommand {
             .output()
         {
             Ok(o) => o,
-            Err(_) => {
-                return Err(AppError::CallIwlFailed);
-            }
+            Err(e) => return Err(Error::call_iw_failed(e)),
         };
 
         if let Some(code) = output.status.code() {
             // command failed: No such device (-19)
             if code == 237 {
-                return Err(AppError::LinkNotExist);
+                return Err(Error::link_not_exist(iface.as_ref()));
             }
         }
 
         if !output.status.success() {
-            return Err(AppError::CallIwlFailed);
+            return Err(Error::call_iw_failed(format!("{:?}", &output.stderr)));
         }
 
         if output.stdout == b"Not connected.\x0A".to_vec() {
-            return Err(AppError::NotConnected);
+            return Err(Error::not_connected(iface.as_ref()));
         }
 
         ExtCommand::parse_iw_link(output.stdout)
@@ -244,8 +243,18 @@ impl ExtCommand {
             static ref LINK_PATTERN: Regex = Regex::new(include_str!("iw_dev_link.regex")).unwrap();
         }
 
+        let ro: String = match String::from_utf8(raw_output.clone()) {
+            Ok(s) => s,
+            Err(_) => {
+                return Err(Error::parse_iw_link_failed(format!(
+                    "{:?}",
+                    &raw_output.clone()
+                )));
+            }
+        };
+
         let mut info: Map<String, Value> = Map::new();
-        match LINK_PATTERN.captures(String::from_utf8(raw_output).unwrap().as_str()) {
+        match LINK_PATTERN.captures(ro.as_str()) {
             Some(c) => {
                 if let Some(station) = c.name("station") {
                     info.insert(
@@ -259,7 +268,7 @@ impl ExtCommand {
                 }
             }
             None => {
-                return Err(AppError::ParseIwLinkFailed);
+                return Err(Error::parse_iw_link_failed(format!("{:?}", ro)));
             }
         }
 
@@ -270,6 +279,7 @@ impl ExtCommand {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::ErrorKind;
 
     #[test]
     fn test_call_networkctl_list() {
@@ -282,17 +292,26 @@ mod tests {
         let info = ExtCommand::call_networkctl_status("lo").unwrap();
         assert_eq!(info.len(), 9);
 
-        let err = ExtCommand::call_networkctl_status("LinkToOtherWorlds").unwrap_err();
-        assert_eq!(err, AppError::LinkNotExist);
+        let err: Error = ExtCommand::call_networkctl_status("LinkToOtherWorlds").unwrap_err();
+        assert_eq!(
+            err.kind,
+            ErrorKind::LinkNotExist("LinkToOtherWorlds does not exist.".to_string())
+        );
     }
 
     #[test]
     fn test_call_iw_link() {
-        let err = ExtCommand::call_iw_link("lo").unwrap_err();
-        assert_eq!(err, AppError::NotConnected);
+        let err: Error = ExtCommand::call_iw_link("lo").unwrap_err();
+        assert_eq!(
+            err.kind,
+            ErrorKind::NotConnected("lo does not connect to an access point.".to_string())
+        );
 
-        let err = ExtCommand::call_iw_link("LinkToOtherWorlds").unwrap_err();
-        assert_eq!(err, AppError::LinkNotExist);
+        let err: Error = ExtCommand::call_iw_link("LinkToOtherWorlds").unwrap_err();
+        assert_eq!(
+            err.kind,
+            ErrorKind::LinkNotExist("LinkToOtherWorlds does not exist.".to_string())
+        );
     }
 
     #[test]
