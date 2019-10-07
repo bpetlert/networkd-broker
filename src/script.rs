@@ -97,8 +97,8 @@ impl Script {
     }
 
     pub fn execute(&self) -> Result<()> {
-        info!("Try to execute (nowait) {}", self.path());
         if self.no_wait {
+            info!("Try to execute (nowait) {}", self.path());
             match self.execute_nowait() {
                 Ok(_) => {
                     info!("Executed (nowait) {}", self.path());
@@ -110,6 +110,7 @@ impl Script {
                 }
             }
         } else {
+            info!("Try to execute {}", self.path());
             match self.execute_wait(self.timeout) {
                 Ok(_) => {
                     info!("Executed {}", self.path());
