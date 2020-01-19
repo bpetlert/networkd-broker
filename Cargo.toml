@@ -14,17 +14,17 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-structopt = { version = "0.3.5", default-features = false }
+structopt = { version = "0.3.8", default-features = false }
 log = "0.4.8"
 env_logger = "0.7.1"
 strum = "0.17.1"
 strum_macros = "0.17.1"
 derive_more = "0.99.2"
 libsystemd = "0.1.0"
-dbus = "0.7.1"
+dbus = "0.8.1"
 wait-timeout = "0.2.0"
-walkdir = "2.2.9"
-regex = "1.3.1"
+walkdir = "2.3.1"
+regex = "1.3.3"
 lazy_static = "1.4.0"
 serde_json = "1.0.44"
 
