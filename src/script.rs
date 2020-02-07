@@ -1,17 +1,13 @@
-use crate::{
-    environment::Environments,
-    error::{Error, Result},
-    link::OperationalStatus,
-};
+use crate::environment::Environments;
+use crate::link::OperationalStatus;
+use anyhow::{anyhow, Result};
 use log::{info, warn};
-use std::{
-    collections::HashMap,
-    os::unix::fs::MetadataExt,
-    path::{Path, PathBuf},
-    process::Command,
-    sync::Arc,
-    time::Duration,
-};
+use std::collections::HashMap;
+use std::os::unix::fs::MetadataExt;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::sync::Arc;
+use std::time::Duration;
 use wait_timeout::ChildExt;
 use walkdir::WalkDir;
 
@@ -138,7 +134,11 @@ impl Script {
 
         match Command::new(&self.path).args(&args).envs(envs).spawn() {
             Ok(_) => Ok(()),
-            Err(e) => Err(Error::execute_failed(e)),
+            Err(e) => Err(anyhow!(
+                "Execute `{}` failed: {}",
+                &self.path.to_str().unwrap(),
+                e
+            )),
         }
     }
 
@@ -166,7 +166,11 @@ impl Script {
             None => {
                 // script hasn't exited yet
                 script.kill().unwrap();
-                Err(Error::execute_timeout(secs, &self.path))
+                Err(anyhow!(
+                    "Execute `{}` is timeout: {} seconds",
+                    &self.path.to_str().unwrap(),
+                    secs
+                ))
             }
         }
     }
@@ -179,7 +183,7 @@ impl Script {
 
         // Path exists?
         if !path.exists() {
-            return Err(Error::path_not_exist(path));
+            return Err(anyhow!("`{}` does not exist", path.to_str().unwrap()));
         }
 
         let uid = uid.unwrap_or(0);
@@ -211,7 +215,7 @@ impl Script {
         }
 
         if scripts.is_empty() {
-            return Err(Error::no_script_found(path));
+            return Err(anyhow!("No script in `{}`.", path.to_str().unwrap()));
         }
 
         Ok(scripts)
@@ -221,13 +225,10 @@ impl Script {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::error::ErrorKind;
-    use std::{
-        ffi::OsStr,
-        fs::{self, DirBuilder},
-        io::{self, Write},
-        os::unix::fs::OpenOptionsExt,
-    };
+    use std::ffi::OsStr;
+    use std::fs::{self, DirBuilder};
+    use std::io::{self, Write};
+    use std::os::unix::fs::OpenOptionsExt;
     use tempfile::TempDir;
     use users::{get_current_gid, get_current_uid};
 
@@ -279,27 +280,18 @@ mod tests {
 
         // No script for configuring state
         let configuring_d = broker_root.join("configuring.d");
-        let err = Script::get_scripts_in(&configuring_d, Some(uid), Some(gid)).unwrap_err();
-        assert_eq!(
-            err.kind,
-            ErrorKind::NoScriptFound(format!("No script found in: {:?}", &configuring_d))
-        );
+        let result = Script::get_scripts_in(&configuring_d, Some(uid), Some(gid));
+        assert!(result.is_err());
 
         // No script for root in degraded.d
         let degraded_d = broker_root.join("degraded.d");
-        let err = Script::get_scripts_in(&degraded_d, None, None).unwrap_err();
-        assert_eq!(
-            err.kind,
-            ErrorKind::NoScriptFound(format!("No script found in: {:?}", &degraded_d))
-        );
+        let result = Script::get_scripts_in(&degraded_d, None, None);
+        assert!(result.is_err());
 
         // No directory for routable state
         let routable_d = broker_root.join("routable.d");
-        let err = Script::get_scripts_in(&routable_d, Some(uid), Some(gid)).unwrap_err();
-        assert_eq!(
-            err.kind,
-            ErrorKind::PathNotExist(format!("Path does not exist: {:?}", &routable_d))
-        );
+        let result = Script::get_scripts_in(&routable_d, Some(uid), Some(gid));
+        assert!(result.is_err());
     }
 
     fn setup_get_scripts_in() -> tempfile::TempDir {

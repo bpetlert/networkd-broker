@@ -16,17 +16,17 @@ publish = false
 [dependencies]
 structopt = { version = "0.3.9", default-features = false }
 log = "0.4.8"
-env_logger = "0.7.1"
+pretty_env_logger = "0.4.0"
+anyhow = "1.0.26"
 strum = "0.17.1"
 strum_macros = "0.17.1"
-derive_more = "0.99.2"
 libsystemd = "0.1.0"
 dbus = "0.8.1"
 wait-timeout = "0.2.0"
 walkdir = "2.3.1"
 regex = "1.3.4"
 lazy_static = "1.4.0"
-serde_json = "1.0.46"
+serde_json = "1.0.47"
 
 [dev-dependencies]
 tempfile = "3.1.0"

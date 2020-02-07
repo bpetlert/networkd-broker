@@ -1,12 +1,8 @@
-use crate::{
-    error::{Error, Result},
-    extcommand::ExtCommand,
-};
-use dbus::{
-    arg::RefArg,
-    blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC,
-    message::{Message, MessageType, SignalArgs},
-};
+use crate::extcommand::ExtCommand;
+use anyhow::{anyhow, Result};
+use dbus::arg::RefArg;
+use dbus::blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC;
+use dbus::message::{Message, MessageType, SignalArgs};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, str::FromStr};
 use strum_macros::{Display, EnumString};
@@ -87,28 +83,43 @@ impl LinkEvent<'_> {
     /// Extract link event from DBus signal message
     pub fn from_message(msg: &Message) -> Result<Box<LinkEvent>> {
         if msg.msg_type() != MessageType::Signal {
-            return Err(Error::not_dbus_signal(msg.msg_type()));
+            return Err(anyhow!(
+                "Event message `{:?}` is not dbus signal",
+                msg.msg_type()
+            ));
         }
 
         if &*msg.interface().unwrap() != "org.freedesktop.DBus.Properties" {
-            return Err(Error::not_dbus_properties(&*msg.interface().unwrap()));
+            return Err(anyhow!(
+                "`{}` is not 'org.freedesktop.DBus.Properties'",
+                &*msg.interface().unwrap()
+            ));
         }
 
         if let Some(pc) = PC::from_message(&msg) {
             if pc.interface_name != "org.freedesktop.network1.Link" {
-                return Err(Error::not_link_event(pc.interface_name));
+                return Err(anyhow!(
+                    "`{}` is not 'org.freedesktop.network1.Link'",
+                    pc.interface_name
+                ));
             }
 
             let (state_type, state) = pc.changed_properties.iter().next().unwrap();
 
             let st = match StateType::from_str(state_type.as_ref()) {
                 Ok(st) => st,
-                Err(e) => return Err(Error::invalid_state_type(e)),
+                Err(e) => return Err(anyhow!("`{}` is invalid state type: {}", state_type, e)),
             };
 
             let s = match OperationalStatus::from_str(state.as_str().unwrap()) {
                 Ok(s) => s,
-                Err(e) => return Err(Error::invalid_operational_status(e)),
+                Err(e) => {
+                    return Err(anyhow!(
+                        "`{}` is invalid operational status: {}",
+                        state.as_str().unwrap(),
+                        e
+                    ))
+                }
             };
 
             return Ok(Box::new(LinkEvent {
@@ -118,7 +129,7 @@ impl LinkEvent<'_> {
             }));
         }
 
-        Err(Error::cannot_convert_event_message(&msg))
+        Err(anyhow!("Cannot convert event message: {:?}", &msg))
     }
 
     /// Convert DBus path to network interface index
@@ -136,24 +147,34 @@ impl LinkEvent<'_> {
     pub fn index(&self) -> Result<u8> {
         let components = self.path.split('/').collect::<Vec<&str>>();
         if components.len() != 6 {
-            return Err(Error::link_to_index(&self.path));
+            return Err(anyhow!("Cannot convert link `{}` to index", &self.path));
         }
 
         let escaped_index = components.last().unwrap();
         if escaped_index.len() < 3 {
-            return Err(Error::link_to_index(&self.path));
+            return Err(anyhow!("Cannot convert link `{}` to index.", &self.path));
         }
 
         let first_char: char = match u8::from_str_radix(&escaped_index[1..3], 16) {
             Ok(c) => c as char,
-            Err(e) => return Err(Error::link_to_index(e)),
+            Err(e) => {
+                return Err(anyhow!(
+                    "Cannot convert link `{}` to index: {}",
+                    &self.path,
+                    e
+                ))
+            }
         };
 
         let the_rest = &escaped_index[3..];
         let index: String = first_char.to_string() + the_rest;
         match index.parse::<u8>() {
             Ok(i) => Ok(i),
-            Err(e) => Err(Error::link_to_index(e)),
+            Err(e) => Err(anyhow!(
+                "Cannot convert link `{}` to index: {}",
+                &self.path,
+                e
+            )),
         }
     }
 
@@ -250,17 +271,13 @@ impl Link {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::error::ErrorKind;
 
     #[test]
     fn test_link_event_from_message_with_invalid_msg() {
         // Non signal message
         let msg = Message::new_method_call("org.test.rust", "/", "org.test.rust", "Test").unwrap();
-        let link = LinkEvent::from_message(&msg);
-        assert_eq!(
-            link.unwrap_err().kind,
-            ErrorKind::NotDBusSignal(MessageType::MethodCall)
-        );
+        let result = LinkEvent::from_message(&msg);
+        assert!(result.is_err());
 
         // Invalid interface 'org.freedesktop.DBus.Properties'
         let msg = Message::new_signal(
@@ -269,11 +286,8 @@ mod tests {
             "PropertiesChanged",
         )
         .unwrap();
-        let link = LinkEvent::from_message(&msg);
-        assert_eq!(
-            link.unwrap_err().kind,
-            ErrorKind::NotDBusProperties("org.freedesktop.DBus".to_string())
-        );
+        let result = LinkEvent::from_message(&msg);
+        assert!(result.is_err());
 
         // TODO: Test invalid "org.freedesktop.network1.Link"
 
@@ -288,18 +302,15 @@ mod tests {
             "PropertiesChanged",
         )
         .unwrap();
-        let link = LinkEvent::from_message(&msg);
-        assert_eq!(
-            link.unwrap_err().kind,
-            ErrorKind::CannotConvertEventMessage(format!("{:?}", &msg))
-        );
+        let result = LinkEvent::from_message(&msg);
+        assert!(result.is_err());
     }
 
     #[test]
     #[ignore]
     fn test_link_event_from_message_with_valid_msg() {
         // TODO: Test link event with valid message
-        unimplemented!();
+        todo!()
     }
 
     #[test]
@@ -309,16 +320,10 @@ mod tests {
             state_type: StateType::OperationalState,
             state: OperationalStatus::Off,
         };
-        assert_eq!(
-            link_event.index().unwrap_err().kind,
-            ErrorKind::LinkToIndex("/org/freedesktop/network1/link".to_string())
-        );
+        assert!(link_event.index().is_err());
 
         link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_").unwrap();
-        assert_eq!(
-            link_event.index().unwrap_err().kind,
-            ErrorKind::LinkToIndex("/org/freedesktop/network1/link/_".to_string())
-        );
+        assert!(link_event.index().is_err());
 
         link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_31").unwrap();
         assert_eq!(link_event.index().unwrap(), 1);
