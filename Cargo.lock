@@ -241,7 +241,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "networkd-broker"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "dbus 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
