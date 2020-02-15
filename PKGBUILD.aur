@@ -17,7 +17,7 @@ sha256sums=('1afe1c7f6c24cbb49293819f1b66eeca2caa91f04d64594cdfd82fe9e1456700')
 build() {
   cd "${pkgname}-${pkgver}"
 
-  # Ignore target_dir in ~/.cargo/config, reset it to default: "target".
+  # Ignore target-dir in ~/.cargo/config, reset it to default: "target".
   cargo build --release --locked --target-dir target
 }
 

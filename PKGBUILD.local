@@ -23,7 +23,7 @@ pkgver() {
 build() {
   cd "$startdir"
 
-  # Ignore target_dir in ~/.cargo/config, reset it to default: "target".
+  # Ignore target-dir in ~/.cargo/config, reset it to default: "target".
   # Add "$srcdir" to support BUILDDIR variable in makepkg.
   cargo build --release --locked --target-dir "$srcdir/target"
 }
