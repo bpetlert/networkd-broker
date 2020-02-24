@@ -4,13 +4,13 @@
 
 The networkd-broker is an event broker daemon for systemd-networkd. It will execute scripts in the `/etc/networkd/broker.d/<STATE>.d` directory in alphabetical order in response to network events.
 
-This work is based on [networkd-dispatcher](https://gitlab.com/craftyguy/networkd-dispatcher), written in Rust, for the purpose of reducing runtime dependencies. This also helps reduce memory footprint (~30MB &longrightarrow; ~8MB) and improve startup time (~30secs &longrightarrow; ~1sec).
+This work is based on [networkd-dispatcher](https://gitlab.com/craftyguy/networkd-dispatcher), written in Rust, for the purpose of reducing runtime dependencies. This also helps reduce memory footprint (~30MB &longrightarrow; ~8MB) and improve startup time (\~30secs ⟶ \~1sec for spinning hard disk drive).
 
 ## Installation
 
 ### Arch Linux
 
-Build and install arch package from source:
+It is available on AUR as [networkd-broker](https://aur.archlinux.org/packages/networkd-broker/). To build and install arch package from GIT source:
 
 ```bash
 $ git clone https://github.com/bpetlert/networkd-broker.git
