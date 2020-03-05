@@ -1,6 +1,8 @@
 # Networkd-broker
 
 [![Release](https://img.shields.io/github/v/tag/bpetlert/networkd-broker?include_prereleases&label=release&style=flat-square)](https://github.com/bpetlert/networkd-broker/releases/latest)
+[![AUR:
+networkd-broker](https://img.shields.io/aur/version/networkd-broker?style=flat-square)](https://aur.archlinux.org/packages/networkd-broker/)
 [![License:
 MIT](https://img.shields.io/github/license/bpetlert/networkd-broker?style=flat-square)](./LICENSE)
 
