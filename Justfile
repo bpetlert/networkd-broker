@@ -1,29 +1,38 @@
 @_default:
   just --list
 
-bumpversion version:
-  just _bump-cargo {{version}}
-  just _bump-pkgbuild {{version}}
+# Run with debug log
+run-debug +ARGS='':
+  RUST_BACKTRACE=1 NETWORKD_BROKER_LOG=networkd_broker=debug cargo run -- {{ARGS}}
+
+# Run test
+test +CASES='':
+  cargo test -- {{CASES}} --nocapture
+
+# Increase semver
+bump-version VERSION:
+  just _bump-cargo {{VERSION}}
+  just _bump-pkgbuild {{VERSION}}
   cargo check
 
-@_bump-cargo version:
-  cargo bump {{version}}
+@_bump-cargo VERSION:
+  cargo bump {{VERSION}}
 
-@_bump-pkgbuild version:
-  sed -i -e "s/pkgver=.*/pkgver={{version}}/g" -e "s/pkgrel=.*/pkgrel=1/g"  PKGBUILD.local
-  sed -i -e "s/pkgver=.*/pkgver={{version}}/g" -e "s/pkgrel=.*/pkgrel=1/g"  PKGBUILD.aur
+@_bump-pkgbuild VERSION:
+  sed -i -e "s/pkgver=.*/pkgver={{VERSION}}/g" -e "s/pkgrel=.*/pkgrel=1/g"  PKGBUILD.local
+  sed -i -e "s/pkgver=.*/pkgver={{VERSION}}/g" -e "s/pkgrel=.*/pkgrel=1/g"  PKGBUILD.aur
 
-release version:
+# Commit bump version and release
+release VERSION:
   git add Cargo.lock Cargo.toml PKGBUILD.aur PKGBUILD.local
-  git commit --message="chore(release): {{version}}"
-  git tag --sign --annotate {{version}} --message="version {{version}}" --edit
+  git commit --message="chore(release): {{VERSION}}"
+  git tag --sign --annotate {{VERSION}} --message="version {{VERSION}}" --edit
 
-test case:
-  cargo test -- {{case}} --nocapture
-
+# Update dependencies
 update-deps:
   cargo upgrade
   cargo update
 
+# Crate Arch package from GIT source
 makepkg:
   makepkg -p PKGBUILD.local
