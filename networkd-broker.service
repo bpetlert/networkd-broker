@@ -1,7 +1,7 @@
 [Unit]
 Description=Event broker daemon for systemd-networkd
-Requires=dbus.socket
-After=dbus.socket
+Requires=systemd-networkd.socket
+After=systemd-networkd.socket
 
 [Service]
 Type=notify
