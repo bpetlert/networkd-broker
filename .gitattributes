@@ -1,1 +1,2 @@
 *.rs linguist-detectable
+scripts/* -linguist-detectable
