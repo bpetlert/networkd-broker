@@ -73,6 +73,7 @@ impl ExtCommand {
     where
         S: AsRef<str>,
     {
+        // Call 'iw dev <iface> link'
         let output = match Command::new("iw")
             .args(&["dev", iface.as_ref(), "link"])
             .output()
