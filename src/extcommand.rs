@@ -312,7 +312,7 @@ mod tests {
         let networkctl_list = include_str!("networkctl_list_test.raw");
         let link_list =
             ExtCommand::parse_networkctl_list(networkctl_list.as_bytes().to_vec()).unwrap();
-        assert_eq!(link_list.len(), 3);
+        assert_eq!(link_list.len(), 7);
 
         assert_eq!(
             link_list.get(&1),
@@ -329,7 +329,29 @@ mod tests {
             link_list.get(&2),
             Some(&Link {
                 idx: 2,
-                iface: "wlp3s0".to_owned(),
+                iface: "enp1s0".to_owned(),
+                link_type: LinkType::Ether,
+                operational: OperationalStatus::Off,
+                setup: OperationalStatus::Unmanaged,
+            })
+        );
+
+        assert_eq!(
+            link_list.get(&4),
+            Some(&Link {
+                idx: 4,
+                iface: "enp0s29f7u7".to_owned(),
+                link_type: LinkType::Wimax,
+                operational: OperationalStatus::Off,
+                setup: OperationalStatus::Unmanaged,
+            })
+        );
+
+        assert_eq!(
+            link_list.get(&5),
+            Some(&Link {
+                idx: 5,
+                iface: "wlan0".to_owned(),
                 link_type: LinkType::Wlan,
                 operational: OperationalStatus::Routable,
                 setup: OperationalStatus::Configured,
@@ -337,12 +359,34 @@ mod tests {
         );
 
         assert_eq!(
-            link_list.get(&3),
+            link_list.get(&6),
             Some(&Link {
-                idx: 3,
-                iface: "enp6s0".to_owned(),
+                idx: 6,
+                iface: "docker0".to_owned(),
+                link_type: LinkType::Bridge,
+                operational: OperationalStatus::NoCarrier,
+                setup: OperationalStatus::Unmanaged,
+            })
+        );
+
+        assert_eq!(
+            link_list.get(&7),
+            Some(&Link {
+                idx: 7,
+                iface: "br-64d90f095f5a".to_owned(),
+                link_type: LinkType::Bridge,
+                operational: OperationalStatus::Routable,
+                setup: OperationalStatus::Unmanaged,
+            })
+        );
+
+        assert_eq!(
+            link_list.get(&9),
+            Some(&Link {
+                idx: 9,
+                iface: "veth9b91158".to_owned(),
                 link_type: LinkType::Ether,
-                operational: OperationalStatus::Off,
+                operational: OperationalStatus::Degraded,
                 setup: OperationalStatus::Unmanaged,
             })
         );

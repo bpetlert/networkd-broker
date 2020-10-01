@@ -1,3 +1,7 @@
-  1 lo     loopback carrier  unmanaged 
-  2 wlp3s0 wlan     routable configured
-  3 enp6s0 ether    off      unmanaged 
+  1 lo              loopback carrier    unmanaged 
+  2 enp1s0          ether    off        unmanaged 
+  4 enp0s29f7u7     wimax    off        unmanaged 
+  5 wlan0           wlan     routable   configured
+  6 docker0         bridge   no-carrier unmanaged 
+  7 br-64d90f095f5a bridge   routable   unmanaged 
+  9 veth9b91158     ether    degraded   unmanaged 
