@@ -207,7 +207,7 @@ pub enum LinkType {
     #[strum(serialize = "wimax")]
     Wimax,
 
-    #[strum(default = "true")]
+    #[strum(default)]
     Unknown(String),
 }
 
