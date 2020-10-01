@@ -184,7 +184,7 @@ mod tests {
         let mut link2 = Link::new();
         link2
             .idx(2)
-            .iface("wlp3s0")
+            .iface("wlan0")
             .link_type(LinkType::Wlan)
             .operational(OperationalStatus::Routable)
             .setup(OperationalStatus::Configured);
@@ -204,8 +204,11 @@ mod tests {
         let pack = envs.pack();
         assert_eq!(pack.len(), 8);
 
-        assert_eq!(pack.get("NWD_IP4_ADDRESS").unwrap(), "192.168.1.106");
-        assert_eq!(pack.get("NWD_DEVICE_IFACE").unwrap(), "wlp3s0");
+        assert_eq!(
+            pack.get("NWD_IP4_ADDRESS").unwrap(),
+            "192.168.1.106 (DHCP4 via 192.168.1.254)"
+        );
+        assert_eq!(pack.get("NWD_DEVICE_IFACE").unwrap(), "wlan0");
         assert_eq!(
             pack.get("NWD_IP6_ADDRESS").unwrap(),
             "fb62:bfa:cbf7:0:7be3:1dcf:fddb:9e25 fd70::7be3:1dcf:fddb:9e25"

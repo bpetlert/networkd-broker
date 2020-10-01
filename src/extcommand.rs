@@ -44,9 +44,15 @@ impl ExtCommand {
     where
         S: AsRef<str>,
     {
-        // Call 'networkctl status --no-pager <iface>'
+        // Call 'networkctl status --no-pager --no-legend --lines=0 <iface>'
         let output = match Command::new("networkctl")
-            .args(&["status", "--no-pager", iface.as_ref()])
+            .args(&[
+                "status",
+                "--no-pager",
+                "--no-legend",
+                "--lines=0",
+                iface.as_ref(),
+            ])
             .output()
         {
             Ok(o) => o,
@@ -292,8 +298,8 @@ mod tests {
 
     #[test]
     fn test_call_networkctl_status() {
-        let info = ExtCommand::call_networkctl_status("lo").unwrap();
-        assert_eq!(info.len(), 9);
+        let result = ExtCommand::call_networkctl_status("lo");
+        assert!(result.is_ok());
 
         let result = ExtCommand::call_networkctl_status("LinkToOtherWorlds");
         assert!(result.is_err());
@@ -399,7 +405,7 @@ mod tests {
         let networkctl_status1 = include_str!("networkctl_status_test_1.raw");
         let status1 =
             ExtCommand::parse_networkctl_status(networkctl_status1.as_bytes().to_vec()).unwrap();
-        assert_eq!(status1.len(), 9);
+        assert_eq!(status1.len(), 11);
 
         let networkctl_status1_json = include_str!("networkctl_status_test_1.json");
         let output1_json: Value = serde_json::from_str(networkctl_status1_json).unwrap();
@@ -407,11 +413,11 @@ mod tests {
             serde_json::from_str(serde_json::to_string(&status1).unwrap().as_str()).unwrap();
         assert_eq!(&status1_value, &output1_json);
 
-        // Test link 2: wlp3s0
+        // Test link 2: wlan0
         let networkctl_status2 = include_str!("networkctl_status_test_2.raw");
         let status2 =
             ExtCommand::parse_networkctl_status(networkctl_status2.as_bytes().to_vec()).unwrap();
-        assert_eq!(status2.len(), 17);
+        assert_eq!(status2.len(), 22);
 
         let networkctl_status2_json = include_str!("networkctl_status_test_2.json");
         let output2_json: Value = serde_json::from_str(networkctl_status2_json).unwrap();

@@ -105,7 +105,7 @@ The following environment variables are being passed to each script:
 
 ### Example script
 
-The script below activate/deactivate [Chrony](https://wiki.archlinux.org/index.php/Chrony) correspond to operation state of wlp3s0 link. This script must be putted (or symlink) in `/etc/networkd/broker.d/configured.d` and `/etc/networkd/broker.d/dormant.d`.
+The script below activate/deactivate [Chrony](https://wiki.archlinux.org/index.php/Chrony) correspond to operation state of wlan0 link. This script must be putted (or symlink) in `/etc/networkd/broker.d/configured.d` and `/etc/networkd/broker.d/dormant.d`.
 
 ```bash
 #!/usr/bin/env bash
@@ -113,7 +113,7 @@ The script below activate/deactivate [Chrony](https://wiki.archlinux.org/index.p
 STATE=$1
 IFACE=$2
 
-if [[ $IFACE != "wlp3s0" ]]; then
+if [[ $IFACE != "wlan0" ]]; then
     exit 0
 fi
 

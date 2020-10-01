@@ -1,4 +1,5 @@
-# Networkd-broker
+Networkd-broker
+===============
 
 [![Release](https://img.shields.io/github/v/tag/bpetlert/networkd-broker?include_prereleases&label=release&style=flat-square)](https://github.com/bpetlert/networkd-broker/releases/latest)
 [![AUR:
@@ -16,7 +17,8 @@ written in Rust, for the purpose of reducing runtime dependencies. This
 also helps reduce memory footprint (\~30MB ⟶ \~8MB) and improve startup
 time (\~30secs ⟶ \~1sec for spinning hard disk drive).
 
-## Installation
+Installation
+------------
 
 ### Arch Linux
 
@@ -24,58 +26,52 @@ It is available on AUR as
 [networkd-broker](https://aur.archlinux.org/packages/networkd-broker/).
 To build and install arch package from GIT source:
 
-``` bash
-$ git clone https://github.com/bpetlert/networkd-broker.git
-...
-$ cd networkd-broker
-$ makepkg -p PKGBUILD.local
-...
-$ pacman -U networkd-broker-xxxx-1-x86_64.pkg.tar
-```
+    $ git clone https://github.com/bpetlert/networkd-broker.git
+    ...
+    $ cd networkd-broker
+    $ makepkg -p PKGBUILD.local
+    ...
+    $ pacman -U networkd-broker-xxxx-1-x86_64.pkg.tar
 
 Then enable/start networkd-broker.service
 
-``` bash
-$ systemctl enable networkd-broker.service
-...
-$ systemctl start networkd-broker.service
-```
+    $ systemctl enable networkd-broker.service
+    ...
+    $ systemctl start networkd-broker.service
 
-## Configuration
+Configuration
+-------------
 
 To change the options of networkd-broker service, run:
 
-``` bash
-$ systemctl edit networkd-broker.service`
-...
-```
+    $ systemctl edit networkd-broker.service`
+    ...
 
-``` ini
-/etc/systemd/system/networkd-broker.service.d/override.conf
--------------------------------------------------------------------------
+    /etc/systemd/system/networkd-broker.service.d/override.conf
+    -------------------------------------------------------------------------
 
-[Service]
-Environment='NETWORKD_BROKER_ARGS=-vv --json'
-```
+    [Service]
+    Environment='NETWORKD_BROKER_ARGS=-vv --json'
 
 Supported options are:
 
-  - `-j`, `--json` Pass JSON encoding of event and link status to
+-   `-j`, `--json` Pass JSON encoding of event and link status to
     script.
-  - `-T`, `--run-startup-triggers` Generate events reflecting
+-   `-T`, `--run-startup-triggers` Generate events reflecting
     preexisting state and behavior on startup.
-  - `-v`, `--verbose` Increment verbosity level once per call. Default
+-   `-v`, `--verbose` Increment verbosity level once per call. Default
     is showing error.
-      - `-v`: warn
-      - `-vv`: info
-      - `-vvv`: debug
-      - `-vvvv`: trace
-  - `-S`, `--script-dir <script_dir>` Location under which to look for
+    -   `-v`: warn
+    -   `-vv`: info
+    -   `-vvv`: debug
+    -   `-vvvv`: trace
+-   `-S`, `--script-dir <script_dir>` Location under which to look for
     scripts. The default location is `/etc/networkd/broker.d`.
-  - `-t`, `--timeout <timeout>` Script execution timeout in seconds.
+-   `-t`, `--timeout <timeout>` Script execution timeout in seconds.
     Default is 20 seconds.
 
-## Usage
+Usage
+-----
 
 The scripts for any network event need to be putted (or symlink) in its
 corresponding directory as shown below. Each script must be a regular
@@ -85,34 +81,32 @@ service configuration. Any of the scripts which end with '-nowait' is
 run immediately, without waitting for the termination of previous
 scripts.
 
-``` bash
-/etc/networkd
-└── broker.d
-    ├── carrier.d
-    ├── configured.d
-    ├── configuring.d
-    ├── degraded.d
-    ├── dormant.d
-    ├── linger.d
-    ├── no-carrier.d
-    ├── off.d
-    ├── routable.d
-    └── unmanaged.d
-```
+    /etc/networkd
+    └── broker.d
+        ├── carrier.d
+        ├── configured.d
+        ├── configuring.d
+        ├── degraded.d
+        ├── dormant.d
+        ├── linger.d
+        ├── no-carrier.d
+        ├── off.d
+        ├── routable.d
+        └── unmanaged.d
 
 The scripts are run in alphabetical order, one at a time with two
 arguments and a set of environment variables being passed. Each script
 run asynchronously from `networkd-broker` process.
 
 | Argument | Description                                                                                                                                                                                                       |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `STATE`  | Current operational status is one of the following: `carrier`, `configured`, `configuring`, `degraded`, `dormant`, `linger`, `no-carrier`, `off`, `routable`, `unmanaged`; see `man networkctl` for more details. |
 | `IFACE`  | Link name that operation just happened on                                                                                                                                                                         |
 
 The following environment variables are being passed to each script:
 
 | Variable                   | Description                                                                                                           |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+|----------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | `NWD_DEVICE_IFACE`         | Link name that operation just happened on, same value as `IFACE`                                                      |
 | `NWD_BROKER_ACTION`        | Current operational status, same value as `STATE`                                                                     |
 | `NWD_ESSID`                | SSID of access point if link is wireless                                                                              |
@@ -127,34 +121,34 @@ The following environment variables are being passed to each script:
 
 The script below activate/deactivate
 [Chrony](https://wiki.archlinux.org/index.php/Chrony) correspond to
-operation state of wlp3s0 link. This script must be putted (or symlink)
+operation state of wlan0 link. This script must be putted (or symlink)
 in `/etc/networkd/broker.d/configured.d` and
 `/etc/networkd/broker.d/dormant.d`.
 
-``` bash
-#!/usr/bin/env bash
+    #!/usr/bin/env bash
 
-STATE=$1
-IFACE=$2
+    STATE=$1
+    IFACE=$2
 
-if [[ $IFACE != "wlp3s0" ]]; then
-    exit 0
-fi
+    if [[ $IFACE != "wlan0" ]]; then
+        exit 0
+    fi
 
-if [[ $STATE == "configured" ]]; then
-    chronyc online > /dev/null
-    echo "Activate chrony"
-elif [[ $STATE == "dormant" ]]; then
-    chronyc offline > /dev/null
-    echo "Deactivate chrony"
-fi
-```
+    if [[ $STATE == "configured" ]]; then
+        chronyc online > /dev/null
+        echo "Activate chrony"
+    elif [[ $STATE == "dormant" ]]; then
+        chronyc offline > /dev/null
+        echo "Deactivate chrony"
+    fi
 
-## Design (roughly)
+Design (roughly)
+----------------
 
 ![Sequence Diagram](docs/assets/networkd-broker.png)
 
-## License
+License
+-------
 
 [networkd-notify](https://github.com/wavexx/networkd-notify):  
 Copyright (c) 2016 [Yuri D'Elia](wavexx@thregr.org)
