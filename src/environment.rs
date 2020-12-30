@@ -171,14 +171,14 @@ mod tests {
     use super::*;
 
     use crate::extcommand::ExtCommand;
-    use crate::link::{LinkEvent, LinkType, OperationalStatus, StateType};
+    use crate::link::{LinkEvent, LinkStatus, LinkType, StateType};
 
     #[test]
     fn test_extract_from() {
         let link_event = LinkEvent {
             path: dbus::Path::new("/org/freedesktop/network1/link/_32").unwrap(),
             state_type: StateType::AdministrativeState,
-            state: OperationalStatus::Configured,
+            state: LinkStatus::Configured,
         };
 
         let mut link2 = Link::new();
@@ -186,8 +186,8 @@ mod tests {
             .idx(2)
             .iface("wlan0")
             .link_type(LinkType::Wlan)
-            .operational(OperationalStatus::Routable)
-            .setup(OperationalStatus::Configured);
+            .operational(LinkStatus::Routable)
+            .setup(LinkStatus::Configured);
 
         let networkctl_status2 = include_str!("networkctl_status_test_2.raw");
         let mut status2 =

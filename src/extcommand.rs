@@ -1,4 +1,4 @@
-use crate::link::{Link, LinkType, OperationalStatus};
+use crate::link::{Link, LinkStatus, LinkType};
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use regex::{Regex, RegexSet, SetMatches};
@@ -132,10 +132,9 @@ impl ExtCommand {
                 let link_type = cap.name("type").unwrap().as_str();
 
                 let operational =
-                    OperationalStatus::from_str(cap.name("operational").unwrap().as_str()).unwrap();
+                    LinkStatus::from_str(cap.name("operational").unwrap().as_str()).unwrap();
 
-                let setup =
-                    OperationalStatus::from_str(cap.name("setup").unwrap().as_str()).unwrap();
+                let setup = LinkStatus::from_str(cap.name("setup").unwrap().as_str()).unwrap();
 
                 let link_type = LinkType::from_str(link_type).unwrap();
 
@@ -327,8 +326,8 @@ mod tests {
                 idx: 1,
                 iface: "lo".to_owned(),
                 link_type: LinkType::Loopback,
-                operational: OperationalStatus::Carrier,
-                setup: OperationalStatus::Unmanaged,
+                operational: LinkStatus::Carrier,
+                setup: LinkStatus::Unmanaged,
             })
         );
 
@@ -338,8 +337,8 @@ mod tests {
                 idx: 2,
                 iface: "enp1s0".to_owned(),
                 link_type: LinkType::Ether,
-                operational: OperationalStatus::Off,
-                setup: OperationalStatus::Unmanaged,
+                operational: LinkStatus::Off,
+                setup: LinkStatus::Unmanaged,
             })
         );
 
@@ -349,8 +348,8 @@ mod tests {
                 idx: 4,
                 iface: "enp0s29f7u7".to_owned(),
                 link_type: LinkType::Wimax,
-                operational: OperationalStatus::Off,
-                setup: OperationalStatus::Unmanaged,
+                operational: LinkStatus::Off,
+                setup: LinkStatus::Unmanaged,
             })
         );
 
@@ -360,8 +359,8 @@ mod tests {
                 idx: 5,
                 iface: "wlan0".to_owned(),
                 link_type: LinkType::Wlan,
-                operational: OperationalStatus::Routable,
-                setup: OperationalStatus::Configured,
+                operational: LinkStatus::Routable,
+                setup: LinkStatus::Configured,
             })
         );
 
@@ -371,8 +370,8 @@ mod tests {
                 idx: 6,
                 iface: "docker0".to_owned(),
                 link_type: LinkType::Bridge,
-                operational: OperationalStatus::NoCarrier,
-                setup: OperationalStatus::Unmanaged,
+                operational: LinkStatus::NoCarrier,
+                setup: LinkStatus::Unmanaged,
             })
         );
 
@@ -382,8 +381,8 @@ mod tests {
                 idx: 7,
                 iface: "br-64d90f095f5a".to_owned(),
                 link_type: LinkType::Bridge,
-                operational: OperationalStatus::Routable,
-                setup: OperationalStatus::Unmanaged,
+                operational: LinkStatus::Routable,
+                setup: LinkStatus::Unmanaged,
             })
         );
 
@@ -393,8 +392,8 @@ mod tests {
                 idx: 9,
                 iface: "veth9b91158".to_owned(),
                 link_type: LinkType::Ether,
-                operational: OperationalStatus::Degraded,
-                setup: OperationalStatus::Unmanaged,
+                operational: LinkStatus::Degraded,
+                setup: LinkStatus::Unmanaged,
             })
         );
     }

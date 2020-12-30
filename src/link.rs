@@ -20,53 +20,68 @@ pub enum StateType {
     OperationalState,
 }
 
-/// Operational status
+/// Link status
 ///
-/// Taken from networkctl's man page
+/// Operational Status / Setup Status from man page of networkctl (systemd 247.2)
 #[derive(Debug, Clone, PartialEq, EnumString, Display)]
-pub enum OperationalStatus {
-    #[strum(serialize = "n/a")]
-    NotAvailable,
+pub enum LinkStatus {
+    /// the device is missing
+    #[strum(serialize = "missing")]
+    Missing,
 
+    /// the device is powered down
     #[strum(serialize = "off")]
     Off,
 
+    /// the device is powered up, but it does not yet have a carrier
     #[strum(serialize = "no-carrier")]
     NoCarrier,
 
+    /// the device has a carrier, but is not yet ready for normal traffic
     #[strum(serialize = "dormant")]
     Dormant,
 
+    /// for bond or bridge master, one of the bonding or bridge slave network interfaces is in off, no-carrier, or dormant state
     #[strum(serialize = "degraded-carrier")]
     DegradedCarrier,
 
+    /// the link has a carrier, or for bond or bridge master, all bonding or bridge slave network interfaces are enslaved to the master.
     #[strum(serialize = "carrier")]
     Carrier,
 
+    /// the link has carrier and addresses valid on the local link configured
     #[strum(serialize = "degraded")]
     Degraded,
 
+    /// the link has carrier and is enslaved to bond or bridge master network interface
     #[strum(serialize = "enslaved")]
     Enslaved,
 
+    /// the link has carrier and routable address configured
     #[strum(serialize = "routable")]
     Routable,
 
+    /// udev is still processing the link, we don't yet know if we will manage it
     #[strum(serialize = "pending")]
     Pending,
 
+    /// networkd failed to manage the link
     #[strum(serialize = "failed")]
     Failed,
 
+    /// in the process of retrieving configuration or configuring the link
     #[strum(serialize = "configuring")]
     Configuring,
 
+    /// link configured successfully
     #[strum(serialize = "configured")]
     Configured,
 
+    /// networkd is not handling the link
     #[strum(serialize = "unmanaged")]
     Unmanaged,
 
+    /// the link is gone, but has not yet been dropped by networkd
     #[strum(serialize = "linger")]
     Linger,
 }
@@ -76,7 +91,7 @@ pub enum OperationalStatus {
 pub struct LinkEvent<'m> {
     pub path: dbus::Path<'m>,
     pub state_type: StateType,
-    pub state: OperationalStatus,
+    pub state: LinkStatus,
 }
 
 impl LinkEvent<'_> {
@@ -111,7 +126,7 @@ impl LinkEvent<'_> {
                 Err(e) => return Err(anyhow!("`{}` is invalid state type: {}", state_type, e)),
             };
 
-            let s = match OperationalStatus::from_str(state.as_str().unwrap()) {
+            let s = match LinkStatus::from_str(state.as_str().unwrap()) {
                 Ok(s) => s,
                 Err(e) => {
                     return Err(anyhow!(
@@ -219,8 +234,8 @@ pub struct Link {
     pub idx: u8,
     pub iface: String,
     pub link_type: LinkType,
-    pub operational: OperationalStatus,
-    pub setup: OperationalStatus,
+    pub operational: LinkStatus,
+    pub setup: LinkStatus,
 }
 
 impl Link {
@@ -229,8 +244,8 @@ impl Link {
             idx: 0,
             iface: String::new(),
             link_type: LinkType::Loopback,
-            operational: OperationalStatus::Linger,
-            setup: OperationalStatus::Unmanaged,
+            operational: LinkStatus::Linger,
+            setup: LinkStatus::Unmanaged,
         }
     }
 
@@ -252,12 +267,12 @@ impl Link {
         self
     }
 
-    pub fn operational(&mut self, s: OperationalStatus) -> &mut Link {
+    pub fn operational(&mut self, s: LinkStatus) -> &mut Link {
         self.operational = s;
         self
     }
 
-    pub fn setup(&mut self, s: OperationalStatus) -> &mut Link {
+    pub fn setup(&mut self, s: LinkStatus) -> &mut Link {
         self.setup = s;
         self
     }
@@ -321,7 +336,7 @@ mod tests {
         let mut link_event = LinkEvent {
             path: dbus::Path::new("/org/freedesktop/network1/link").unwrap(),
             state_type: StateType::OperationalState,
-            state: OperationalStatus::Off,
+            state: LinkStatus::Off,
         };
         assert!(link_event.index().is_err());
 

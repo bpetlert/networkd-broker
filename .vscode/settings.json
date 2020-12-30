@@ -3,11 +3,18 @@
     "D'Elia",
     "ESSID",
     "IFACE",
-    "Networkd",
     "SSID",
     "chrony",
     "chronyc",
     "elif",
-    "networkctl"
+    "networkctl",
+    "dbus",
+    "ffidisp",
+    "libsystemd",
+    "networkd",
+    "stdintf",
+    "udev",
+    "wimax",
+    "wlan"
   ]
 }

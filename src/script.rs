@@ -1,5 +1,5 @@
 use crate::environment::Environments;
-use crate::link::OperationalStatus;
+use crate::link::LinkStatus;
 use anyhow::{anyhow, Result};
 use log::{info, warn};
 use std::collections::HashMap;
@@ -25,7 +25,7 @@ impl Arguments {
         }
     }
 
-    pub fn state(&mut self, state: &OperationalStatus) -> &mut Arguments {
+    pub fn state(&mut self, state: &LinkStatus) -> &mut Arguments {
         self.state = state.to_string();
         self
     }
@@ -235,7 +235,7 @@ mod tests {
     #[test]
     fn test_arguments_order() {
         let mut args = Arguments::new();
-        args.state(&OperationalStatus::Unmanaged).iface("eth0");
+        args.state(&LinkStatus::Unmanaged).iface("eth0");
         assert_eq!(args.pack(), vec!["unmanaged", "eth0"]);
     }
 
