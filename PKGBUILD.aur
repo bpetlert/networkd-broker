@@ -29,6 +29,6 @@ package() {
 
   install -dm755 "$pkgdir/etc/networkd/broker.d/"{carrier.d,configured.d,configuring.d,degraded.d,dormant.d,linger.d,no-carrier.d,off.d,routable.d,unmanaged.d}
 
-  install -Dm644 "README.md" "$pkgdir/usr/share/doc/${pkgname}/README.md"
+  install -Dm644 "README.adoc" "$pkgdir/usr/share/doc/${pkgname}/README.adoc"
   install -Dm644 "LICENSE" "$pkgdir/usr/share/licenses/${pkgname}/LICENSE"
 }
