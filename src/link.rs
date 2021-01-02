@@ -151,12 +151,14 @@ impl LinkEvent<'_> {
     ///
     /// The first character of each component of a dbus object path is escaped, if it is a number.
     ///
+    /// ```ignore
     ///     1 → _31
     ///     2 → _32
     ///     3 → _33
     ///    10 → _310
     ///
     /// _31 --> 0x31 --> '1'
+    /// ```
     ///
     /// src: https://lists.freedesktop.org/archives/systemd-devel/2016-May/036528.html
     pub fn index(&self) -> Result<u8> {
