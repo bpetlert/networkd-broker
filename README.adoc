@@ -129,7 +129,7 @@ The following environment variables are being passed to each script:
 | Current operation;
 see `man networkctl` for more details.
 
-| `NWD_LINK_STATE`
+| `NWD_OPERATIONAL_STATE`
 | Current operation;
 see `man networkctl` for more details.
 
