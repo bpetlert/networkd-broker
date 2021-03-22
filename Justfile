@@ -36,3 +36,7 @@ update-deps:
 # Crate Arch package from GIT source
 makepkg:
   makepkg -p PKGBUILD.local
+
+# Monitor org.freedesktop.network1
+monitor-bus:
+  sudo busctl monitor --match "type='signal',path_namespace='/org/freedesktop/network1',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'"
