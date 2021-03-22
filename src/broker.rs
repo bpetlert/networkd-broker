@@ -5,7 +5,7 @@ use crate::{
     script::{Arguments, Script},
 };
 use dbus::{
-    blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC,
+    blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as Ppc,
     {ffidisp::Connection, message::SignalArgs},
 };
 use libsystemd::daemon::{self, NotifyState};
@@ -42,7 +42,8 @@ impl Broker {
     pub fn listen(&self) {
         // Connect to DBus
         let connection = Connection::new_system().unwrap();
-        let matched_signal = PC::match_str(Some(&"org.freedesktop.network1".into()), None);
+        let matched_signal = Ppc::match_str(Some(&"org.freedesktop.network1".into()), None);
+        debug!("Match Signal: {:?}", matched_signal);
         connection.add_match(&matched_signal).unwrap();
 
         // Notify systemd that we are ready :)
@@ -52,9 +53,13 @@ impl Broker {
         info!("Listening for link event...");
         loop {
             if let Some(msg) = connection.incoming(1000).next() {
-                if let Ok(link_event) = LinkEvent::from_message(&msg) {
-                    debug!("{:?}", link_event);
-                    self.respond(&link_event);
+                debug!("Link Message: {:?}", &msg);
+                match LinkEvent::from_message(&msg) {
+                    Ok(link_event) => {
+                        debug!("Link Event: {:?}", link_event);
+                        self.respond(&link_event);
+                    }
+                    Err(e) => debug!("Error: {:?}", e),
                 }
             }
         }

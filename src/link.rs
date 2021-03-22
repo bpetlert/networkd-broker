@@ -1,8 +1,9 @@
 use crate::extcommand::ExtCommand;
 use anyhow::{anyhow, Result};
 use dbus::arg::RefArg;
-use dbus::blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC;
+use dbus::blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as Ppc;
 use dbus::message::{Message, MessageType, SignalArgs};
+use log::debug;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, str::FromStr};
 use strum_macros::{Display, EnumString};
@@ -111,7 +112,8 @@ impl LinkEvent<'_> {
             ));
         }
 
-        if let Some(pc) = PC::from_message(&msg) {
+        if let Some(pc) = Ppc::from_message(&msg) {
+            debug!("Properties Changed: {:?}", &pc);
             if pc.interface_name != "org.freedesktop.network1.Link" {
                 return Err(anyhow!(
                     "`{}` is not 'org.freedesktop.network1.Link'",
