@@ -1,0 +1,38 @@
+#
+# For test link event
+#
+
+LINK := "ethdummy"
+
+alias up := link-up
+alias down := link-down
+alias ls := list
+
+@_default:
+  just --list
+
+create-dummy-link:
+  sudo modprobe dummy
+  sudo ip link add {{LINK}} type dummy
+
+delete-dummy-link:
+  sudo ip link delete {{LINK}} type dummy
+  sudo rmmod dummy
+
+link-up:
+  sudo ip link set dev {{LINK}} up
+
+link-down:
+  sudo ip link set dev {{LINK}} down
+
+set-ip:
+  sudo ip addr add 192.168.1.50/24 brd + dev {{LINK}}
+
+del-ip:
+  sudo ip addr del 192.168.1.50/24 dev {{LINK}}
+
+list:
+  networkctl list {{LINK}}
+
+show:
+  ip addr show {{LINK}}
