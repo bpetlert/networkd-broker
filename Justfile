@@ -36,6 +36,7 @@ update-deps:
 # Crate Arch package from GIT source
 makepkg:
   makepkg -p PKGBUILD.local
+  git co PKGBUILD.local
 
 # Monitor org.freedesktop.network1
 monitor-bus:
