@@ -7,18 +7,23 @@ arch=('x86_64')
 url="https://github.com/bpetlert/networkd-broker"
 license=('GPL3')
 depends=('systemd' 'iw')
-makedepends=('rust' 'cargo')
+makedepends=(cargo)
 provides=("${pkgname}")
 conflicts=("${pkgname}")
 
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/bpetlert/${pkgname}/archive/${pkgver}.tar.gz")
 sha256sums=('1afe1c7f6c24cbb49293819f1b66eeca2caa91f04d64594cdfd82fe9e1456700')
 
+prepare() {
+  cd "${pkgname}-${pkgver}"
+  cargo fetch --locked --target "$CARCH-unknown-linux-gnu"
+}
+
 build() {
   cd "${pkgname}-${pkgver}"
-
-  # Ignore target-dir in ~/.cargo/config, reset it to default: "target".
-  cargo build --release --locked --target-dir target
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build  --frozen --release
 }
 
 package() {

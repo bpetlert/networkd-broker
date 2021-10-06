@@ -7,7 +7,7 @@ arch=('x86_64')
 url="https://github.com/bpetlert/networkd-broker"
 license=('GPL3')
 depends=('systemd' 'iw')
-makedepends=('rust' 'cargo')
+makedepends=(cargo)
 provides=("${pkgname}")
 conflicts=("${pkgname}")
 
@@ -20,12 +20,21 @@ pkgver() {
   git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
 }
 
+prepare() {
+  cd "$startdir"
+  cargo fetch --locked --target "$CARCH-unknown-linux-gnu"
+}
+
 build() {
   cd "$startdir"
 
+  export RUSTUP_TOOLCHAIN=stable
+
   # Ignore target-dir in ~/.cargo/config, reset it to default: "target".
   # Add "$srcdir" to support BUILDDIR variable in makepkg.
-  cargo build --release --locked --target-dir "$srcdir/target"
+  export CARGO_TARGET_DIR=$srcdir/target
+
+  cargo build  --frozen --release
 }
 
 package() {
