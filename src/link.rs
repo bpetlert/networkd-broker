@@ -112,7 +112,7 @@ impl LinkEvent<'_> {
             ));
         }
 
-        if let Some(pc) = Ppc::from_message(&msg) {
+        if let Some(pc) = Ppc::from_message(msg) {
             debug!("Properties Changed: {:?}", &pc);
             if pc.interface_name != "org.freedesktop.network1.Link" {
                 return Err(anyhow!(
@@ -282,7 +282,7 @@ impl Link {
     }
 
     pub fn status(&self) -> Result<Map<String, Value>> {
-        ExtCommand::link_status(&self)
+        ExtCommand::link_status(self)
     }
 
     pub fn link_list() -> Result<HashMap<u8, Link>> {

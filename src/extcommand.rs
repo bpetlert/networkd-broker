@@ -183,6 +183,7 @@ impl ExtCommand {
                 // Field
                 if matches.matched(1) {
                     if let Some((key, value)) = FIELD_PATTERN.captures(line).and_then(|cap| {
+                        #[allow(clippy::bind_instead_of_map)]
                         cap.name("key")
                             .and_then(|key| cap.name("value").and_then(|value| Some((key, value))))
                     }) {
@@ -240,7 +241,6 @@ impl ExtCommand {
                             );
                         }
                     }
-                    return;
                 }
             });
 
@@ -257,7 +257,7 @@ impl ExtCommand {
             Err(_) => {
                 return Err(anyhow!(
                     "Parse `iw link`'s output failed: {:?}",
-                    &raw_output.clone()
+                    &raw_output
                 ));
             }
         };

@@ -133,7 +133,7 @@ impl Broker {
 
         // Pack all event-related environments.
         let mut envs = Environments::new();
-        envs.extract_from(&event, link, status, self.json);
+        envs.extract_from(event, link, status, self.json);
         let shared_envs = Arc::new(envs);
 
         // Push scripts with args + envs to launcher's queue.

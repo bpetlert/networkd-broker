@@ -1,19 +1,21 @@
 {
   "cSpell.words": [
-    "D'Elia",
-    "ESSID",
-    "IFACE",
-    "SSID",
     "chrony",
     "chronyc",
-    "elif",
-    "networkctl",
+    "D'Elia",
     "dbus",
+    "elif",
+    "ESSID",
     "ffidisp",
+    "IFACE",
     "libsystemd",
+    "networkctl",
     "networkd",
+    "SSID",
     "stdintf",
+    "structopt",
     "udev",
+    "veth",
     "wimax",
     "wlan"
   ]

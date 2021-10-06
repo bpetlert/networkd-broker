@@ -1,7 +1,6 @@
 use anyhow::Result;
 use log::LevelFilter;
 use log::{debug, error, info};
-use pretty_env_logger;
 use std::env;
 use std::process;
 use structopt::StructOpt;
