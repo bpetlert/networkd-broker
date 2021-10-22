@@ -8,7 +8,7 @@ homepage = "https://github.com/bpetlert/networkd-broker"
 repository = "https://github.com/bpetlert/networkd-broker"
 readme = "README.adoc"
 license = "GPL3"
-edition = "2018"
+edition = "2021"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
