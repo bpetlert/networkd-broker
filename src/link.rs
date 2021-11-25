@@ -299,7 +299,8 @@ mod tests {
     #[test]
     fn test_link_event_from_message_with_invalid_msg() {
         // Non signal message
-        let msg = Message::new_method_call("org.test.rust", "/", "org.test.rust", "Test").unwrap();
+        let msg = Message::new_method_call("org.test.rust", "/", "org.test.rust", "Test")
+            .expect("Cannot create DBus method call.");
         let result = LinkEvent::from_message(&msg);
         assert!(result.is_err());
 
@@ -309,7 +310,7 @@ mod tests {
             "org.freedesktop.DBus",
             "PropertiesChanged",
         )
-        .unwrap();
+        .expect("Cannot create DBus signal.");
         let result = LinkEvent::from_message(&msg);
         assert!(result.is_err());
 
@@ -325,7 +326,7 @@ mod tests {
             "org.freedesktop.DBus.Properties",
             "PropertiesChanged",
         )
-        .unwrap();
+        .expect("Cannot create DBus signal.");
         let result = LinkEvent::from_message(&msg);
         assert!(result.is_err());
     }
@@ -340,29 +341,36 @@ mod tests {
     #[test]
     fn test_dbus_path_to_network_link_index() {
         let mut link_event = LinkEvent {
-            path: dbus::Path::new("/org/freedesktop/network1/link").unwrap(),
+            path: dbus::Path::new("/org/freedesktop/network1/link")
+                .expect("Cannot create DBus path."),
             state_type: StateType::OperationalState,
             state: LinkStatus::Off,
         };
         assert!(link_event.index().is_err());
 
-        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_").unwrap();
+        link_event.path =
+            dbus::Path::new("/org/freedesktop/network1/link/_").expect("Cannot create DBus path.");
         assert!(link_event.index().is_err());
 
-        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_31").unwrap();
-        assert_eq!(link_event.index().unwrap(), 1);
+        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_31")
+            .expect("Cannot create DBus path.");
+        assert_eq!(link_event.index().expect("Cannot get network index."), 1);
 
-        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_32").unwrap();
-        assert_eq!(link_event.index().unwrap(), 2);
+        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_32")
+            .expect("Cannot create DBus path.");
+        assert_eq!(link_event.index().expect("Cannot get network index."), 2);
 
-        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_33").unwrap();
-        assert_eq!(link_event.index().unwrap(), 3);
+        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_33")
+            .expect("Cannot create DBus path.");
+        assert_eq!(link_event.index().expect("Cannot get network index."), 3);
 
-        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_34").unwrap();
-        assert_eq!(link_event.index().unwrap(), 4);
+        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_34")
+            .expect("Cannot create DBus path.");
+        assert_eq!(link_event.index().expect("Cannot get network index."), 4);
 
-        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_310").unwrap();
-        assert_eq!(link_event.index().unwrap(), 10);
+        link_event.path = dbus::Path::new("/org/freedesktop/network1/link/_310")
+            .expect("Cannot create DBus path.");
+        assert_eq!(link_event.index().expect("Cannot get network index."), 10);
     }
 
     #[test]

@@ -118,12 +118,12 @@ impl ExtCommand {
 
     pub fn parse_networkctl_list(raw_output: Vec<u8>) -> Result<HashMap<u8, Link>> {
         lazy_static! {
-            static ref PATTERN: Regex = Regex::new(include_str!("networkctl_list.regex")).unwrap();
+            static ref PATTERN: Regex = Regex::new(include_str!("networkctl_list.regex"))
+                .expect("Cannot create regex for `networkctl list`.");
         }
 
         let mut links: HashMap<u8, Link> = HashMap::new();
-        String::from_utf8(raw_output)
-            .unwrap()
+        String::from_utf8(raw_output)?
             .lines()
             .filter_map(|line| PATTERN.captures(line))
             .map(|cap| {
@@ -160,96 +160,97 @@ impl ExtCommand {
                 include_str!("networkctl_status_field.regex"),
                 include_str!("networkctl_status_extra_value.regex"),
             ])
-            .unwrap();
+            .expect("Cannot create regex for status pattern.");
             static ref LINK_PATTERN: Regex =
-                Regex::new(include_str!("networkctl_status_idx_link.regex")).unwrap();
+                Regex::new(include_str!("networkctl_status_idx_link.regex"))
+                    .expect("Cannot create regex for `networkctl status`'s idx.");
             static ref FIELD_PATTERN: Regex =
-                Regex::new(include_str!("networkctl_status_field.regex")).unwrap();
+                Regex::new(include_str!("networkctl_status_field.regex"))
+                    .expect("Cannot create regex for `networkctl status`'s field.");
             static ref EXTRA_VALUE_PATTERN: Regex =
-                Regex::new(include_str!("networkctl_status_extra_value.regex")).unwrap();
+                Regex::new(include_str!("networkctl_status_extra_value.regex"))
+                    .expect("Cannot create regex for `networkctl status`'s extra value.");
         }
 
         let mut status: Map<String, Value> = Map::new();
         let mut last_insert_key: String = String::new();
-        String::from_utf8(raw_output)
-            .unwrap()
-            .lines()
-            .for_each(|line| {
-                let matches: SetMatches = STATUS_PATTERN_SET.matches(line);
-                if !matches.matched_any() {
-                    return;
-                }
+        String::from_utf8(raw_output)?.lines().for_each(|line| {
+            let matches: SetMatches = STATUS_PATTERN_SET.matches(line);
+            if !matches.matched_any() {
+                return;
+            }
 
-                // Field
-                if matches.matched(1) {
-                    if let Some((key, value)) = FIELD_PATTERN.captures(line).and_then(|cap| {
-                        #[allow(clippy::bind_instead_of_map)]
-                        cap.name("key")
-                            .and_then(|key| cap.name("value").and_then(|value| Some((key, value))))
-                    }) {
-                        let key: String = key.as_str().to_owned().replace(char::is_whitespace, "");
-                        last_insert_key = key.clone();
+            // Field
+            if matches.matched(1) {
+                if let Some((key, value)) = FIELD_PATTERN.captures(line).and_then(|cap| {
+                    #[allow(clippy::bind_instead_of_map)]
+                    cap.name("key")
+                        .and_then(|key| cap.name("value").and_then(|value| Some((key, value))))
+                }) {
+                    let key: String = key.as_str().to_owned().replace(char::is_whitespace, "");
+                    last_insert_key = key.clone();
+                    status.insert(
+                        key,
+                        Value::String(value.as_str().trim_start().trim_end().to_owned()),
+                    );
+                }
+                return;
+            }
+
+            // Extra value for previous field
+            if matches.matched(2) {
+                if let Some(extra_value) = EXTRA_VALUE_PATTERN
+                    .captures(line)
+                    .and_then(|cap| cap.name("extra_value"))
+                {
+                    if let Some(last_insert_value) = status.get_mut(&last_insert_key) {
+                        match last_insert_value {
+                            Value::Array(v) => {
+                                v.push(Value::String(
+                                    extra_value.as_str().trim_start().trim_end().to_owned(),
+                                ));
+                            }
+                            Value::String(s) => {
+                                *last_insert_value = Value::Array(vec![
+                                    Value::String(s.clone()),
+                                    Value::String(
+                                        extra_value.as_str().trim_start().trim_end().to_owned(),
+                                    ),
+                                ]);
+                            }
+                            _ => {}
+                        };
+                    }
+                }
+                return;
+            }
+
+            // Idx: Link
+            if matches.matched(0) {
+                if let Some(cap) = LINK_PATTERN.captures(line) {
+                    if let Some(idx) = cap.name("idx") {
+                        if let Ok(n) = idx.as_str().parse::<u8>() {
+                            status.insert("Idx".to_owned(), Value::Number(Number::from(n)));
+                        }
+                    }
+
+                    if let Some(link) = cap.name("link") {
                         status.insert(
-                            key,
-                            Value::String(value.as_str().trim_start().trim_end().to_owned()),
+                            "Link".to_owned(),
+                            Value::String(link.as_str().trim_start().trim_end().to_owned()),
                         );
                     }
-                    return;
                 }
-
-                // Extra value for previous field
-                if matches.matched(2) {
-                    if let Some(extra_value) = EXTRA_VALUE_PATTERN
-                        .captures(line)
-                        .and_then(|cap| cap.name("extra_value"))
-                    {
-                        if let Some(last_insert_value) = status.get_mut(&last_insert_key) {
-                            match last_insert_value {
-                                Value::Array(v) => {
-                                    v.push(Value::String(
-                                        extra_value.as_str().trim_start().trim_end().to_owned(),
-                                    ));
-                                }
-                                Value::String(s) => {
-                                    *last_insert_value = Value::Array(vec![
-                                        Value::String(s.clone()),
-                                        Value::String(
-                                            extra_value.as_str().trim_start().trim_end().to_owned(),
-                                        ),
-                                    ]);
-                                }
-                                _ => {}
-                            };
-                        }
-                    }
-                    return;
-                }
-
-                // Idx: Link
-                if matches.matched(0) {
-                    if let Some(cap) = LINK_PATTERN.captures(line) {
-                        if let Some(idx) = cap.name("idx") {
-                            if let Ok(n) = idx.as_str().parse::<u8>() {
-                                status.insert("Idx".to_owned(), Value::Number(Number::from(n)));
-                            }
-                        }
-
-                        if let Some(link) = cap.name("link") {
-                            status.insert(
-                                "Link".to_owned(),
-                                Value::String(link.as_str().trim_start().trim_end().to_owned()),
-                            );
-                        }
-                    }
-                }
-            });
+            }
+        });
 
         Ok(status)
     }
 
     pub fn parse_iw_link(raw_output: Vec<u8>) -> Result<Map<String, Value>> {
         lazy_static! {
-            static ref LINK_PATTERN: Regex = Regex::new(include_str!("iw_dev_link.regex")).unwrap();
+            static ref LINK_PATTERN: Regex = Regex::new(include_str!("iw_dev_link.regex"))
+                .expect("Cannot create regex for `iw dev link`.");
         }
 
         let ro: String = match String::from_utf8(raw_output.clone()) {
@@ -291,7 +292,7 @@ mod tests {
 
     #[test]
     fn test_call_networkctl_list() {
-        let link_list = ExtCommand::call_networkctl_list().unwrap();
+        let link_list = ExtCommand::call_networkctl_list().expect("Cannot call `networkctl list`.");
         assert_ne!(link_list.len(), 0);
     }
 
@@ -316,8 +317,8 @@ mod tests {
     #[test]
     fn test_parse_networkctl_list() {
         let networkctl_list = include_str!("networkctl_list_test.raw");
-        let link_list =
-            ExtCommand::parse_networkctl_list(networkctl_list.as_bytes().to_vec()).unwrap();
+        let link_list = ExtCommand::parse_networkctl_list(networkctl_list.as_bytes().to_vec())
+            .expect("Cannot parse `networkctl list`.");
         assert_eq!(link_list.len(), 7);
 
         assert_eq!(
@@ -402,46 +403,62 @@ mod tests {
     fn test_parse_networkctl_status() {
         // Test link 1: lo
         let networkctl_status1 = include_str!("networkctl_status_test_1.raw");
-        let status1 =
-            ExtCommand::parse_networkctl_status(networkctl_status1.as_bytes().to_vec()).unwrap();
+        let status1 = ExtCommand::parse_networkctl_status(networkctl_status1.as_bytes().to_vec())
+            .expect("Cannot parse networkctl status.");
         assert_eq!(status1.len(), 11);
 
         let networkctl_status1_json = include_str!("networkctl_status_test_1.json");
-        let output1_json: Value = serde_json::from_str(networkctl_status1_json).unwrap();
-        let status1_value: Value =
-            serde_json::from_str(serde_json::to_string(&status1).unwrap().as_str()).unwrap();
+        let output1_json: Value =
+            serde_json::from_str(networkctl_status1_json).expect("Cannot convert to JSON.");
+        let status1_value: Value = serde_json::from_str(
+            serde_json::to_string(&status1)
+                .expect("Cannot convert to string")
+                .as_str(),
+        )
+        .expect("Cannot convert to JSON.");
         assert_eq!(&status1_value, &output1_json);
 
         // Test link 2: wlan0
         let networkctl_status2 = include_str!("networkctl_status_test_2.raw");
-        let status2 =
-            ExtCommand::parse_networkctl_status(networkctl_status2.as_bytes().to_vec()).unwrap();
+        let status2 = ExtCommand::parse_networkctl_status(networkctl_status2.as_bytes().to_vec())
+            .expect("Cannot parse networkctl status.");
         assert_eq!(status2.len(), 22);
 
         let networkctl_status2_json = include_str!("networkctl_status_test_2.json");
-        let output2_json: Value = serde_json::from_str(networkctl_status2_json).unwrap();
-        let status2_value: Value =
-            serde_json::from_str(serde_json::to_string(&status2).unwrap().as_str()).unwrap();
+        let output2_json: Value =
+            serde_json::from_str(networkctl_status2_json).expect("Cannot convert to JSON.");
+        let status2_value: Value = serde_json::from_str(
+            serde_json::to_string(&status2)
+                .expect("Cannot convert to string")
+                .as_str(),
+        )
+        .expect("Cannot convert to JSON.");
         assert_eq!(&status2_value, &output2_json);
 
         // Test link 3: enp6s0
         let networkctl_status3 = include_str!("networkctl_status_test_3.raw");
-        let status3 =
-            ExtCommand::parse_networkctl_status(networkctl_status3.as_bytes().to_vec()).unwrap();
+        let status3 = ExtCommand::parse_networkctl_status(networkctl_status3.as_bytes().to_vec())
+            .expect("Cannot parse networkctl status.");
         assert_eq!(status3.len(), 16);
 
         let networkctl_status3_json = include_str!("networkctl_status_test_3.json");
-        let output3_json: Value = serde_json::from_str(networkctl_status3_json).unwrap();
-        let status3_value: Value =
-            serde_json::from_str(serde_json::to_string(&status3).unwrap().as_str()).unwrap();
+        let output3_json: Value =
+            serde_json::from_str(networkctl_status3_json).expect("Cannot convert to JSON.");
+        let status3_value: Value = serde_json::from_str(
+            serde_json::to_string(&status3)
+                .expect("Cannot convert to string")
+                .as_str(),
+        )
+        .expect("Cannot convert to JSON.");
         assert_eq!(&status3_value, &output3_json);
     }
 
     #[test]
     fn test_parse_iw_link() {
         let iw_link = include_str!("iw_dev_link.test");
-        let info = ExtCommand::parse_iw_link(iw_link.as_bytes().to_vec()).unwrap();
-        assert_eq!(info.get("Station").unwrap(), "19:21:12:bf:23:c6");
-        assert_eq!(info.get("Ssid").unwrap(), "Haven");
+        let info =
+            ExtCommand::parse_iw_link(iw_link.as_bytes().to_vec()).expect("Cannot parse iw link.");
+        assert_eq!(info.get("Station").expect("No value"), "19:21:12:bf:23:c6");
+        assert_eq!(info.get("Ssid").expect("No value"), "Haven");
     }
 }

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use log::{debug, error, info, LevelFilter};
+use log::{debug, error, info, warn, LevelFilter};
 use std::{env, process};
 use structopt::StructOpt;
 
@@ -42,12 +42,12 @@ fn run_app() -> Result<()> {
 
     if arguments.run_startup_triggers {
         info!("Execute all scripts for the current state for each interface");
-        broker.trigger_all();
+        if let Err(err) = broker.trigger_all() {
+            warn!("{}", err);
+        }
     }
 
-    broker.listen();
-
-    Ok(())
+    broker.listen()
 }
 
 fn main() {

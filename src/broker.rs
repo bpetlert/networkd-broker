@@ -4,6 +4,7 @@ use crate::{
     link::{Link, LinkEvent, StateType},
     script::{Arguments, Script},
 };
+use anyhow::{anyhow, Result};
 use dbus::{
     blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as Ppc,
     {ffidisp::Connection, message::SignalArgs},
@@ -39,25 +40,27 @@ impl Broker {
         }
     }
 
-    pub fn listen(&self) {
+    pub fn listen(&self) -> Result<()> {
         // Connect to DBus
-        let connection = Connection::new_system().unwrap();
+        let connection = Connection::new_system()?;
         let matched_signal = Ppc::match_str(Some(&"org.freedesktop.network1".into()), None);
         debug!("Match Signal: {:?}", matched_signal);
-        connection.add_match(&matched_signal).unwrap();
+        connection.add_match(&matched_signal)?;
 
         // Notify systemd that we are ready :)
         let _ = daemon::notify(false, &[NotifyState::Ready]);
 
         // Start DBus event loop
-        info!("Listening for link event...");
+        info!("Start listening for link event.");
         loop {
             if let Some(msg) = connection.incoming(1000).next() {
                 debug!("Link Message: {:?}", &msg);
                 match LinkEvent::from_message(&msg) {
                     Ok(link_event) => {
                         debug!("Link Event: {:?}", link_event);
-                        self.respond(&link_event);
+                        if let Err(e) = self.respond(&link_event) {
+                            warn!("{}", e);
+                        }
                     }
                     Err(e) => debug!("Error: {:?}", e),
                 }
@@ -65,48 +68,62 @@ impl Broker {
         }
     }
 
-    pub fn trigger_all(&self) {
+    pub fn trigger_all(&self) -> Result<()> {
         let link_list = match Link::link_list() {
-            Ok(l) => l,
-            Err(_) => {
-                warn!("Cannot get iface name");
-                return;
+            Ok(link) => link,
+            Err(err) => {
+                return Err(anyhow!(
+                    "Cannot trigger all interface, since no iface found, {}",
+                    err
+                ));
             }
         };
 
+        info!("Start trigger all interfaces.");
         for (idx, link) in link_list.iter() {
-            // Create fake event
-            let mut event = LinkEvent {
-                path: dbus::Path::new(LinkEvent::index_to_dbus_path(*idx)).unwrap(),
-                state_type: StateType::OperationalState,
-                state: link.operational.clone(),
-            };
+            info!("Trigger on interface `{}`", link.iface);
+            if let Ok(path) = dbus::Path::new(LinkEvent::index_to_dbus_path(*idx)) {
+                // Create fake event
+                let mut event = LinkEvent {
+                    path,
+                    state_type: StateType::OperationalState,
+                    state: link.operational.clone(),
+                };
 
-            // 1: OperationalState
-            self.respond(&event);
+                // 1: OperationalState
+                if let Err(e) = self.respond(&event) {
+                    warn!("{}", e);
+                }
 
-            // 2: AdministrativeState
-            event.state_type = StateType::AdministrativeState;
-            event.state = link.setup.clone();
-            self.respond(&event);
+                // 2: AdministrativeState
+                event.state_type = StateType::AdministrativeState;
+                event.state = link.setup.clone();
+                if let Err(e) = self.respond(&event) {
+                    warn!("{}", e);
+                }
+            } else {
+                // Display error and skip this interface.
+                warn!("Cannot create D-Bus path from link index `{}`.", idx);
+            }
         }
+
+        Ok(())
     }
 
-    fn respond(&self, event: &LinkEvent) {
+    fn respond(&self, event: &LinkEvent) -> Result<()> {
         // Convert link index to link name.
         let link_list = match Link::link_list() {
-            Ok(l) => l,
-            Err(_) => {
-                warn!("Cannot get iface name");
-                return;
+            Ok(link) => link,
+            Err(err) => {
+                return Err(anyhow!("Cannot get interface list, {}", err));
             }
         };
 
-        let link = match link_list.get(&event.index().unwrap()) {
+        let idx = event.index()?;
+        let link = match link_list.get(&idx) {
             Some(l) => l,
             None => {
-                warn!("Cannot get iface name");
-                return;
+                return Err(anyhow!("Cannot find link index `{}`", idx));
             }
         };
 
@@ -118,8 +135,7 @@ impl Broker {
         let scripts = match Script::get_scripts_in(&script_path, None, None) {
             Ok(s) => s,
             Err(e) => {
-                info!("{}", e);
-                return;
+                return Err(anyhow!("{}", e));
             }
         };
 
@@ -129,7 +145,7 @@ impl Broker {
         let shared_args = Arc::new(args);
 
         // Fetch status of iface
-        let status = link.status().unwrap();
+        let status = link.status()?;
 
         // Pack all event-related environments.
         let mut envs = Environments::new();
@@ -141,7 +157,11 @@ impl Broker {
             s.args(Some(shared_args.clone()))
                 .envs(Some(shared_envs.clone()))
                 .timeout(self.timeout);
-            self.launcher.add(s);
+            if let Err(e) = self.launcher.add(s) {
+                warn!("{}", e);
+            }
         }
+
+        Ok(())
     }
 }

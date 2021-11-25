@@ -68,7 +68,8 @@ impl Environments {
         json: bool,
     ) -> &mut Environments {
         lazy_static! {
-            static ref IPV4_PATTERN: Regex = Regex::new(include_str!("ipv4.regex")).unwrap();
+            static ref IPV4_PATTERN: Regex = Regex::new(include_str!("ipv4.regex"))
+                .expect("Cannot create regex for IPv4 pattern.");
         }
 
         // Extract IPV4
@@ -172,7 +173,8 @@ mod tests {
     #[test]
     fn test_extract_from() {
         let link_event = LinkEvent {
-            path: dbus::Path::new("/org/freedesktop/network1/link/_32").unwrap(),
+            path: dbus::Path::new("/org/freedesktop/network1/link/_32")
+                .expect("Cannot create DBus path."),
             state_type: StateType::AdministrativeState,
             state: LinkStatus::Configured,
         };
@@ -187,7 +189,8 @@ mod tests {
 
         let networkctl_status2 = include_str!("networkctl_status_test_2.raw");
         let mut status2 =
-            ExtCommand::parse_networkctl_status(networkctl_status2.as_bytes().to_vec()).unwrap();
+            ExtCommand::parse_networkctl_status(networkctl_status2.as_bytes().to_vec())
+                .expect("Cannot parse networkctl status.");
         status2.insert("Ssid".to_owned(), Value::String("Haven".to_owned()));
         status2.insert(
             "Station".to_owned(),
@@ -201,18 +204,30 @@ mod tests {
         assert_eq!(pack.len(), 8);
 
         assert_eq!(
-            pack.get("NWD_IP4_ADDRESS").unwrap(),
-            "192.168.1.106 (DHCP4 via 192.168.1.254)"
+            pack.get("NWD_IP4_ADDRESS"),
+            Some(&"192.168.1.106 (DHCP4 via 192.168.1.254)".to_owned())
         );
-        assert_eq!(pack.get("NWD_DEVICE_IFACE").unwrap(), "wlan0");
+        assert_eq!(pack.get("NWD_DEVICE_IFACE"), Some(&"wlan0".to_owned()));
         assert_eq!(
-            pack.get("NWD_IP6_ADDRESS").unwrap(),
-            "fb62:bfa:cbf7:0:7be3:1dcf:fddb:9e25 fd70::7be3:1dcf:fddb:9e25"
+            pack.get("NWD_IP6_ADDRESS"),
+            Some(&"fb62:bfa:cbf7:0:7be3:1dcf:fddb:9e25 fd70::7be3:1dcf:fddb:9e25".to_owned())
         );
-        assert_eq!(pack.get("NWD_STATION").unwrap(), "19:21:12:bf:23:c6");
-        assert_eq!(pack.get("NWD_OPERATIONAL_STATE").unwrap(), "routable");
-        assert_eq!(pack.get("NWD_ADMINISTRATIVE_STATE").unwrap(), "configured");
-        assert_eq!(pack.get("NWD_ESSID").unwrap(), "Haven");
-        assert_eq!(pack.get("NWD_BROKER_ACTION").unwrap(), "configured");
+        assert_eq!(
+            pack.get("NWD_STATION"),
+            Some(&"19:21:12:bf:23:c6".to_owned())
+        );
+        assert_eq!(
+            pack.get("NWD_OPERATIONAL_STATE"),
+            Some(&"routable".to_owned())
+        );
+        assert_eq!(
+            pack.get("NWD_ADMINISTRATIVE_STATE"),
+            Some(&"configured".to_owned())
+        );
+        assert_eq!(pack.get("NWD_ESSID"), Some(&"Haven".to_owned()));
+        assert_eq!(
+            pack.get("NWD_BROKER_ACTION"),
+            Some(&"configured".to_owned())
+        );
     }
 }

@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::{
     sync::mpsc::{channel, RecvError, Sender},
     thread,
@@ -26,7 +27,8 @@ impl Launcher {
         Launcher { tx }
     }
 
-    pub fn add(&self, script: Script) {
-        self.tx.send(Box::new(script)).unwrap();
+    pub fn add(&self, script: Script) -> Result<()> {
+        self.tx.send(Box::new(script))?;
+        Ok(())
     }
 }
