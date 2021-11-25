@@ -3,7 +3,7 @@
 
 # Run with debug log
 run-debug +ARGS='':
-  RUST_BACKTRACE=1 NETWORKD_BROKER_LOG=networkd_broker=debug cargo run -- {{ARGS}}
+  RUST_BACKTRACE=1 RUST_LOG=networkd_broker=debug cargo run -- {{ARGS}}
 
 # Run test
 test +CASES='':
