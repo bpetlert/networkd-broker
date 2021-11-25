@@ -1,13 +1,14 @@
-use crate::environment::Environments;
-use crate::link::LinkStatus;
+use crate::{environment::Environments, link::LinkStatus};
 use anyhow::{anyhow, Result};
 use log::{info, warn};
-use std::collections::HashMap;
-use std::os::unix::fs::MetadataExt;
-use std::path::{Path, PathBuf};
-use std::process::Command;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    os::unix::fs::MetadataExt,
+    path::{Path, PathBuf},
+    process::Command,
+    sync::Arc,
+    time::Duration,
+};
 use wait_timeout::ChildExt;
 use walkdir::WalkDir;
 

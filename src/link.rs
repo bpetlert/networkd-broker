@@ -1,8 +1,10 @@
 use crate::extcommand::ExtCommand;
 use anyhow::{anyhow, Result};
-use dbus::arg::RefArg;
-use dbus::blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as Ppc;
-use dbus::message::{Message, MessageType, SignalArgs};
+use dbus::{
+    arg::RefArg,
+    blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as Ppc,
+    message::{Message, MessageType, SignalArgs},
+};
 use log::debug;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, str::FromStr};

@@ -1,13 +1,9 @@
-use std::collections::HashMap;
-
-use strum_macros::{Display, EnumString};
-
-use serde_json::{Map, Value};
-
+use crate::link::{Link, LinkEvent};
 use lazy_static::lazy_static;
 use regex::Regex;
-
-use crate::link::{Link, LinkEvent};
+use serde_json::{Map, Value};
+use std::collections::HashMap;
+use strum_macros::{Display, EnumString};
 
 #[derive(Debug, PartialEq, EnumString, Display)]
 pub enum ScriptEnvironment {
