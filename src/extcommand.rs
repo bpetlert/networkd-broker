@@ -118,7 +118,7 @@ impl ExtCommand {
 
     pub fn parse_networkctl_list(raw_output: Vec<u8>) -> Result<HashMap<u8, Link>> {
         lazy_static! {
-            static ref PATTERN: Regex = Regex::new(include_str!("networkctl_list.regex"))
+            static ref PATTERN: Regex = Regex::new(include_str!("regex/networkctl_list.regex"))
                 .expect("Cannot create regex for `networkctl list`.");
         }
 
@@ -156,19 +156,19 @@ impl ExtCommand {
     pub fn parse_networkctl_status(raw_output: Vec<u8>) -> Result<Map<String, Value>> {
         lazy_static! {
             static ref STATUS_PATTERN_SET: RegexSet = RegexSet::new(&[
-                include_str!("networkctl_status_idx_link.regex"),
-                include_str!("networkctl_status_field.regex"),
-                include_str!("networkctl_status_extra_value.regex"),
+                include_str!("regex/networkctl_status_idx_link.regex"),
+                include_str!("regex/networkctl_status_field.regex"),
+                include_str!("regex/networkctl_status_extra_value.regex"),
             ])
             .expect("Cannot create regex for status pattern.");
             static ref LINK_PATTERN: Regex =
-                Regex::new(include_str!("networkctl_status_idx_link.regex"))
+                Regex::new(include_str!("regex/networkctl_status_idx_link.regex"))
                     .expect("Cannot create regex for `networkctl status`'s idx.");
             static ref FIELD_PATTERN: Regex =
-                Regex::new(include_str!("networkctl_status_field.regex"))
+                Regex::new(include_str!("regex/networkctl_status_field.regex"))
                     .expect("Cannot create regex for `networkctl status`'s field.");
             static ref EXTRA_VALUE_PATTERN: Regex =
-                Regex::new(include_str!("networkctl_status_extra_value.regex"))
+                Regex::new(include_str!("regex/networkctl_status_extra_value.regex"))
                     .expect("Cannot create regex for `networkctl status`'s extra value.");
         }
 
@@ -249,7 +249,7 @@ impl ExtCommand {
 
     pub fn parse_iw_link(raw_output: Vec<u8>) -> Result<Map<String, Value>> {
         lazy_static! {
-            static ref LINK_PATTERN: Regex = Regex::new(include_str!("iw_dev_link.regex"))
+            static ref LINK_PATTERN: Regex = Regex::new(include_str!("regex/iw_dev_link.regex"))
                 .expect("Cannot create regex for `iw dev link`.");
         }
 
@@ -316,7 +316,11 @@ mod tests {
 
     #[test]
     fn test_parse_networkctl_list() {
-        let networkctl_list = include_str!("networkctl_list_test.raw");
+        let networkctl_list = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/",
+            "networkctl_list_test.raw"
+        ));
         let link_list = ExtCommand::parse_networkctl_list(networkctl_list.as_bytes().to_vec())
             .expect("Cannot parse `networkctl list`.");
         assert_eq!(link_list.len(), 7);
@@ -402,12 +406,20 @@ mod tests {
     #[test]
     fn test_parse_networkctl_status() {
         // Test link 1: lo
-        let networkctl_status1 = include_str!("networkctl_status_test_1.raw");
+        let networkctl_status1 = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/",
+            "networkctl_status_test_1.raw"
+        ));
         let status1 = ExtCommand::parse_networkctl_status(networkctl_status1.as_bytes().to_vec())
             .expect("Cannot parse networkctl status.");
         assert_eq!(status1.len(), 11);
 
-        let networkctl_status1_json = include_str!("networkctl_status_test_1.json");
+        let networkctl_status1_json = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/",
+            "networkctl_status_test_1.json"
+        ));
         let output1_json: Value =
             serde_json::from_str(networkctl_status1_json).expect("Cannot convert to JSON.");
         let status1_value: Value = serde_json::from_str(
@@ -419,12 +431,20 @@ mod tests {
         assert_eq!(&status1_value, &output1_json);
 
         // Test link 2: wlan0
-        let networkctl_status2 = include_str!("networkctl_status_test_2.raw");
+        let networkctl_status2 = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/",
+            "networkctl_status_test_2.raw"
+        ));
         let status2 = ExtCommand::parse_networkctl_status(networkctl_status2.as_bytes().to_vec())
             .expect("Cannot parse networkctl status.");
         assert_eq!(status2.len(), 22);
 
-        let networkctl_status2_json = include_str!("networkctl_status_test_2.json");
+        let networkctl_status2_json = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/",
+            "networkctl_status_test_2.json"
+        ));
         let output2_json: Value =
             serde_json::from_str(networkctl_status2_json).expect("Cannot convert to JSON.");
         let status2_value: Value = serde_json::from_str(
@@ -436,12 +456,20 @@ mod tests {
         assert_eq!(&status2_value, &output2_json);
 
         // Test link 3: enp6s0
-        let networkctl_status3 = include_str!("networkctl_status_test_3.raw");
+        let networkctl_status3 = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/",
+            "networkctl_status_test_3.raw"
+        ));
         let status3 = ExtCommand::parse_networkctl_status(networkctl_status3.as_bytes().to_vec())
             .expect("Cannot parse networkctl status.");
         assert_eq!(status3.len(), 16);
 
-        let networkctl_status3_json = include_str!("networkctl_status_test_3.json");
+        let networkctl_status3_json = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/",
+            "networkctl_status_test_3.json"
+        ));
         let output3_json: Value =
             serde_json::from_str(networkctl_status3_json).expect("Cannot convert to JSON.");
         let status3_value: Value = serde_json::from_str(
@@ -455,7 +483,11 @@ mod tests {
 
     #[test]
     fn test_parse_iw_link() {
-        let iw_link = include_str!("iw_dev_link.test");
+        let iw_link = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/",
+            "iw_dev_link.test"
+        ));
         let info =
             ExtCommand::parse_iw_link(iw_link.as_bytes().to_vec()).expect("Cannot parse iw link.");
         assert_eq!(info.get("Station").expect("No value"), "19:21:12:bf:23:c6");

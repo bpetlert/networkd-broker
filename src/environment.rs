@@ -68,7 +68,7 @@ impl Environments {
         json: bool,
     ) -> &mut Environments {
         lazy_static! {
-            static ref IPV4_PATTERN: Regex = Regex::new(include_str!("ipv4.regex"))
+            static ref IPV4_PATTERN: Regex = Regex::new(include_str!("regex/ipv4.regex"))
                 .expect("Cannot create regex for IPv4 pattern.");
         }
 
@@ -187,7 +187,11 @@ mod tests {
             .operational(LinkStatus::Routable)
             .setup(LinkStatus::Configured);
 
-        let networkctl_status2 = include_str!("networkctl_status_test_2.raw");
+        let networkctl_status2 = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/",
+            "networkctl_status_test_2.raw"
+        ));
         let mut status2 =
             ExtCommand::parse_networkctl_status(networkctl_status2.as_bytes().to_vec())
                 .expect("Cannot parse networkctl status.");
