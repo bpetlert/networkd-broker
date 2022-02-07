@@ -1,6 +1,6 @@
 use anyhow::Result;
+use clap::Parser;
 use std::process;
-use structopt::StructOpt;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
 
@@ -17,7 +17,7 @@ use crate::{args::Arguments, broker::Broker};
 fn init_log() -> Result<()> {
     let filter = match EnvFilter::try_from_env("RUST_LOG") {
         Ok(f) => f,
-        Err(_) => EnvFilter::try_new("aur_thumbsup=warn")?,
+        Err(_) => EnvFilter::try_new("networkd_broker=warn")?,
     };
     tracing_subscriber::fmt()
         .with_env_filter(filter)
@@ -28,16 +28,11 @@ fn init_log() -> Result<()> {
 }
 
 fn run_app() -> Result<()> {
-    let arguments = Arguments::from_args();
+    let arguments = Arguments::parse();
     init_log().expect("Initialize logging");
     debug!("Run with {:?}", arguments);
 
-    let broker = Broker::new(
-        arguments.script_dir,
-        arguments.timeout,
-        arguments.json,
-        arguments.verbose,
-    );
+    let broker = Broker::new(arguments.script_dir, arguments.timeout, arguments.json);
     debug!("Start event broker with {:?}", broker);
 
     if arguments.run_startup_triggers {

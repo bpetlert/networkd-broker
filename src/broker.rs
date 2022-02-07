@@ -19,12 +19,11 @@ pub struct Broker {
     script_dir: PathBuf,
     timeout: u64,
     json: bool,
-    verbose: u8,
     launcher: Launcher,
 }
 
 impl Broker {
-    pub fn new<P>(script_dir: P, timeout: u64, json: bool, verbose: u8) -> Broker
+    pub fn new<P>(script_dir: P, timeout: u64, json: bool) -> Broker
     where
         P: Into<PathBuf>,
     {
@@ -35,7 +34,6 @@ impl Broker {
             script_dir: script_dir.into(),
             timeout,
             json,
-            verbose,
             launcher,
         }
     }
@@ -130,7 +128,7 @@ impl Broker {
         info!("Respond to '{}' event of '{}'", &event.state, &link.iface);
 
         // Get all scripts associated with current event
-        let state_dir = format!("{}.d", event.state.to_string());
+        let state_dir = format!("{}.d", event.state);
         let script_path = self.script_dir.join(state_dir);
         let scripts = match Script::get_scripts_in(&script_path, None, None) {
             Ok(s) => s,
