@@ -10,8 +10,8 @@ use dbus::{
     {ffidisp::Connection, message::SignalArgs},
 };
 use libsystemd::daemon::{self, NotifyState};
-use log::{debug, info, warn};
 use std::{path::PathBuf, sync::Arc};
+use tracing::{debug, info, warn};
 
 /// A responder manages link event
 #[derive(Debug)]

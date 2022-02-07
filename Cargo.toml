@@ -1,33 +1,39 @@
 [package]
 name = "networkd-broker"
 version = "0.3.1"
+
 authors = ["Bhanupong Petchlert <bpetlert@gmail.com>"]
+
 description = "An event broker daemon for systemd-networkd"
 documentation = "https://github.com/bpetlert/networkd-broker"
 homepage = "https://github.com/bpetlert/networkd-broker"
-repository = "https://github.com/bpetlert/networkd-broker"
-readme = "README.adoc"
 license = "GPL3"
+readme = "README.adoc"
+repository = "https://github.com/bpetlert/networkd-broker"
+
 edition = "2021"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-structopt = { version = "0.3.25", default-features = false }
-log = "0.4.14"
-pretty_env_logger = "0.4.0"
-anyhow = "1.0.48"
+anyhow = "1.0.53"
+dbus = "0.9.5"
+lazy_static = "1.4.0"
+libsystemd = "0.5.0"
+regex = "1.5.4"
+serde_json = "1.0.78"
+structopt = { version = "0.3.26", default-features = false }
 strum = "0.23.0"
 strum_macros = "0.23.1"
-libsystemd = "0.4.1"
-dbus = "0.9.5"
+tracing = { version = "0.1.30", features = [
+    "max_level_debug",
+    "release_max_level_info",
+] }
+tracing-subscriber = { version = "0.3.8", features = ["env-filter"] }
 wait-timeout = "0.2.0"
 walkdir = "2.3.2"
-regex = "1.5.4"
-lazy_static = "1.4.0"
-serde_json = "1.0.72"
 
 [dev-dependencies]
-tempfile = "3.2.0"
+tempfile = "3.3.0"
 users = "0.11.0"

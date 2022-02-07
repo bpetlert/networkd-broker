@@ -5,10 +5,10 @@ use dbus::{
     blocking::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as Ppc,
     message::{Message, MessageType, SignalArgs},
 };
-use log::debug;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, str::FromStr};
 use strum_macros::{Display, EnumString};
+use tracing::debug;
 
 #[derive(Debug, Clone, PartialEq, EnumString, Display)]
 pub enum StateType {

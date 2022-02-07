@@ -1,7 +1,8 @@
 use anyhow::Result;
-use log::{debug, error, info, warn, LevelFilter};
-use std::{env, process};
+use std::process;
 use structopt::StructOpt;
+use tracing::{debug, error, info, warn};
+use tracing_subscriber::EnvFilter;
 
 mod args;
 mod broker;
@@ -13,23 +14,22 @@ mod script;
 
 use crate::{args::Arguments, broker::Broker};
 
+fn init_log() -> Result<()> {
+    let filter = match EnvFilter::try_from_env("RUST_LOG") {
+        Ok(f) => f,
+        Err(_) => EnvFilter::try_new("aur_thumbsup=warn")?,
+    };
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .without_time()
+        .try_init()
+        .expect("Initialize tracing-subscriber");
+    Ok(())
+}
+
 fn run_app() -> Result<()> {
     let arguments = Arguments::from_args();
-    let log_level = match arguments.verbose {
-        0 => LevelFilter::Error,
-        1 => LevelFilter::Warn,
-        2 => LevelFilter::Info,
-        3 => LevelFilter::Debug,
-        4 => LevelFilter::Trace,
-        _ => LevelFilter::Trace,
-    };
-
-    let mut log_builder = pretty_env_logger::formatted_builder();
-    if let Ok(value) = env::var("RUST_LOG") {
-        log_builder.parse_filters(&value);
-    } else {
-        log_builder.filter_level(log_level);
-    }
+    init_log().expect("Initialize logging");
     debug!("Run with {:?}", arguments);
 
     let broker = Broker::new(

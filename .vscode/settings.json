@@ -1,5 +1,6 @@
 {
   "cSpell.words": [
+    "adoc",
     "chrony",
     "chronyc",
     "D'Elia",
@@ -11,6 +12,7 @@
     "libsystemd",
     "networkctl",
     "networkd",
+    "serde",
     "SSID",
     "stdintf",
     "structopt",

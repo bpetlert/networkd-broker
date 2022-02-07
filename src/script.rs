@@ -1,6 +1,5 @@
 use crate::{environment::Environments, link::LinkStatus};
 use anyhow::{anyhow, Result};
-use log::{info, warn};
 use std::{
     collections::HashMap,
     os::unix::fs::MetadataExt,
@@ -9,6 +8,7 @@ use std::{
     sync::Arc,
     time::Duration,
 };
+use tracing::{info, warn};
 use wait_timeout::ChildExt;
 use walkdir::WalkDir;
 
