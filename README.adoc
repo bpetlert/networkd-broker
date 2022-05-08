@@ -38,32 +38,6 @@ $ systemctl enable networkd-broker.service
 $ systemctl start networkd-broker.service
 ----
 
-== Configuration
-
-To change the options of networkd-broker service, run `systemctl edit networkd-broker.service`
-
-./etc/systemd/system/networkd-broker.service.d/override.conf
-[source,ini]
-----
-[Service]
-Environment='NETWORKD_BROKER_ARGS=-vv --json'
-----
-
-Supported options are:
-
-* `-j`, `--json` Pass JSON encoding of event and link status to script.
-* `-T`, `--run-startup-triggers` Generate events reflecting preexisting state and behavior on startup.
-* `-v`, `--verbose` Increment verbosity level once per call.
-Default is showing error.
-** `-v`: warn
-** `-vv`: info
-** `-vvv`: debug
-** `-vvvv`: trace
-* `-S`, `--script-dir <script_dir>` Location under which to look for scripts.
-The default location is `/etc/networkd/broker.d`.
-* `-t`, `--timeout <timeout>` Script execution timeout in seconds.
-Default is 20 seconds.
-
 == Usage
 
 The scripts for any network event need to be putted (or symlink) in its corresponding directory as shown below.
@@ -77,15 +51,11 @@ Any of the scripts which end with '-nowait' is run immediately, without waitting
 /etc/networkd
 └── broker.d
     ├── carrier.d
-    ├── configured.d
-    ├── configuring.d
     ├── degraded.d
     ├── dormant.d
-    ├── linger.d
     ├── no-carrier.d
     ├── off.d
-    ├── routable.d
-    └── unmanaged.d
+    └── routable.d
 ----
 
 The scripts are run in alphabetical order, one at a time with two arguments and a set of environment variables being passed.
@@ -95,7 +65,7 @@ Each script run asynchronously from `networkd-broker` process.
 | Argument | Description
 
 | `STATE`
-| Current link status is one of the following: `carrier`, `configured`, `configuring`, `degraded`, `dormant`, `linger`, `no-carrier`, `off`, `routable`, `unmanaged`;
+| Current link status is one of the following: `carrier`, `degraded`, `dormant`, `no-carrier`, `off`, `routable`;
 see `man networkctl` for more details.
 
 | `IFACE`
@@ -113,28 +83,8 @@ The following environment variables are being passed to each script:
 | `NWD_BROKER_ACTION`
 | Current link status, same value as `STATE`
 
-| `NWD_ESSID`
-| SSID of access point if link is wireless
-
-| `NWD_STATION`
-| MAC address of associated access point
-
-| `NWD_IP4_ADDRESS`
-| Current IPv4 address
-
-| `NWD_IP6_ADDRESS`
-| Current IPv6 address
-
-| `NWD_ADMINISTRATIVE_STATE`
-| Current operation;
-see `man networkctl` for more details.
-
-| `NWD_OPERATIONAL_STATE`
-| Current operation;
-see `man networkctl` for more details.
-
 | `NWD_JSON`
-| All the environment variables above are encoded in JSON format if `--json` option is setted in service configuration.
+| All the link details are encoded in JSON format.
 |===
 
 === Example script
@@ -143,24 +93,24 @@ The script below activate/deactivate https://wiki.archlinux.org/index.php/Chrony
 This script must be put (or symlink) in `/etc/networkd/broker.d/routable.d`, `/etc/networkd/broker.d/configured.d`, and `/etc/networkd/broker.d/no-carrier.d`.
 
 .chrony-switch
-[source,sh]
+[source,bash]
 ----
-#!/bin/sh
+#!/usr/bin/env bash
 
 STATE=$1
 IFACE=$2
 
-if [ $IFACE != "wlp3s0" ]; then
+if [[ $IFACE != "wlp3s0" ]]; then
     exit 0
 fi
 
-if [ "$STATE" = "routable" ] || [ "$STATE" = "configured" ]; then
+if [[ "$STATE" = "routable" ]]; then
   chronyc online > /dev/null
   chronyc burst 4/4 > /dev/null
   sleep 10
   chronyc makestep > /dev/null
   echo "Activate chrony"
-elif [ "$STATE" = "no-carrier" ]; then
+elif [[ "$STATE" = "no-carrier" ]]; then
   chronyc offline > /dev/null
   echo "Deactivate chrony"
 fi
