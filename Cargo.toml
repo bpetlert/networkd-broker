@@ -30,7 +30,7 @@ strum = "0.24.0"
 strum_macros = "0.24.0"
 tracing = { version = "0.1.34", features = [
     "max_level_debug",
-    "release_max_level_info",
+    "release_max_level_debug",
 ] }
 tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 wait-timeout = "0.2.0"
