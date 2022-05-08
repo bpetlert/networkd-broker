@@ -5,8 +5,7 @@ After=dbus.socket
 
 [Service]
 Type=notify
-Environment='NETWORKD_BROKER_ARGS=-v'
-ExecStart=/usr/bin/networkd-broker $NETWORKD_BROKER_ARGS
+ExecStart=/usr/bin/networkd-broker
 Restart=on-failure
 RestartSec=30s
 
