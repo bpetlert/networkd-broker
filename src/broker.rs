@@ -1,7 +1,8 @@
 use crate::{
+    dbus_interface::NetworkManagerProxy,
     environment::Environments,
     launcher::Launcher,
-    link::LinkEvent,
+    link::{LinkDetails, LinkEvent},
     script::{Script, ScriptArguments},
 };
 
@@ -25,7 +26,7 @@ impl Broker {
     where
         P: Into<PathBuf>,
     {
-        // Start script launcher
+        debug!("Start script launcher");
         let launcher = Launcher::new();
 
         Broker {
@@ -87,46 +88,34 @@ impl Broker {
         Ok(())
     }
 
-    // TODO: Rewrite this
-    pub fn trigger_all(&self) -> Result<()> {
-        // let link_list = match Link::link_list() {
-        //     Ok(link) => link,
-        //     Err(err) => {
-        //         return Err(anyhow!(
-        //             "Cannot trigger all interface, since no iface found, {}",
-        //             err
-        //         ));
-        //     }
-        // };
+    pub async fn trigger_all(&self) -> Result<()> {
+        let conn = Connection::system().await?;
+        let proxy = NetworkManagerProxy::new(&conn).await?;
+        let links = proxy.list_links().await?;
+        for (index, name, path) in links {
+            info!("run-startup-triggers on '{name}'");
 
-        // info!("Start trigger all interfaces.");
-        // for (idx, link) in link_list.iter() {
-        //     info!("Trigger on interface `{}`", link.iface);
-        //     if let Ok(path) = dbus::Path::new(LinkEvent::index_to_dbus_path(*idx)) {
-        //         // Create fake event
-        //         let mut event = LinkEvent {
-        //             path,
-        //             state_type: StateType::OperationalState,
-        //             state: link.operational.clone(),
-        //         };
+            let describe_link = proxy.describe_link(index).await?;
 
-        //         // 1: OperationalState
-        //         if let Err(e) = self.respond(&event) {
-        //             warn!("{}", e);
-        //         }
+            let link_details = match serde_json::from_str::<LinkDetails>(&describe_link) {
+                Ok(link_details) => link_details,
+                Err(err) => return Err(anyhow!("Cannot get link state of {name}: {err}")),
+            };
 
-        //         // 2: AdministrativeState
-        //         event.state_type = StateType::AdministrativeState;
-        //         event.state = link.setup.clone();
-        //         if let Err(e) = self.respond(&event) {
-        //             warn!("{}", e);
-        //         }
-        //     } else {
-        //         // Display error and skip this interface.
-        //         warn!("Cannot create D-Bus path from link index `{}`.", idx);
-        //     }
-        // }
+            let event = Box::new(LinkEvent {
+                iface: name,
+                state: link_details.operational_state.clone(),
+                path: path.to_string(),
+                link_details,
+                link_details_json: describe_link,
+            });
 
+            if let Err(err) = self.respond(&event) {
+                warn!("{err}");
+            }
+        }
+
+        info!("Finished 'run-startup-triggers'");
         Ok(())
     }
 

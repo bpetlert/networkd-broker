@@ -37,8 +37,8 @@ async fn run_app() -> anyhow::Result<()> {
     debug!("Start event broker with {:?}", broker);
 
     if arguments.run_startup_triggers {
-        info!("Execute all scripts for the current state for each interface");
-        if let Err(err) = broker.trigger_all() {
+        info!("Found '--run-startup-triggers'. Start execute all scripts for the current state for each interface");
+        if let Err(err) = broker.trigger_all().await {
             warn!("{}", err);
         }
     }

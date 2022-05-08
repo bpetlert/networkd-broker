@@ -65,7 +65,6 @@ impl Script {
         let path = self.path.to_str().unwrap();
 
         if self.no_wait {
-            info!("Try to execute (nowait) {}", path);
             match self.execute_nowait() {
                 Ok(_) => {
                     info!("Executed (nowait) {}", path);
@@ -77,7 +76,6 @@ impl Script {
                 }
             }
         } else {
-            info!("Try to execute {}", path);
             match self.execute_wait(self.timeout) {
                 Ok(_) => {
                     info!("Executed {}", path);
@@ -103,6 +101,12 @@ impl Script {
             None => &empty_envs,
         };
 
+        info!(
+            "Try to execute (nowait) {} {} {}",
+            &self.path.to_str().unwrap(),
+            args[0],
+            args[1]
+        );
         match Command::new(&self.path).args(&args).envs(envs).spawn() {
             Ok(_) => Ok(()),
             Err(e) => Err(anyhow!(
@@ -127,6 +131,12 @@ impl Script {
 
         let timeout = Duration::from_secs(secs);
 
+        info!(
+            "Try to execute {} {} {}",
+            &self.path.to_str().unwrap(),
+            args[0],
+            args[1]
+        );
         let mut script = Command::new(&self.path)
             .args(&args)
             .envs(envs)

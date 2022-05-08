@@ -6,12 +6,12 @@ use zbus::{Message, MessageType};
 use crate::dbus_interface::NetworkManagerProxy;
 
 #[derive(Deserialize)]
-struct LinkDetails {
+pub struct LinkDetails {
     #[serde(rename = "AdministrativeState")]
     administrative_state: String,
 
     #[serde(rename = "OperationalState")]
-    operational_state: String,
+    pub operational_state: String,
 
     #[serde(rename = "CarrierState")]
     carrier_state: String,
@@ -30,15 +30,15 @@ struct LinkDetails {
 struct Link {
     index: i32,
     name: String,
-    path: String,
+    _path: String,
 }
 
 /// Network link information which is extracted from DBus signal message
 pub struct LinkEvent {
     pub iface: String,
     pub state: String,
-    path: String,
-    link_details: LinkDetails,
+    pub path: String,
+    pub link_details: LinkDetails,
     pub link_details_json: String,
 }
 
@@ -107,7 +107,7 @@ impl LinkEvent {
                 return Ok(Link {
                     index,
                     name,
-                    path: p.to_string(),
+                    _path: p.to_string(),
                 });
             }
         }
