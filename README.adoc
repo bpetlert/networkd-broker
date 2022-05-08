@@ -38,6 +38,20 @@ $ systemctl enable networkd-broker.service
 $ systemctl start networkd-broker.service
 ----
 
+== Configuration
+
+To change the options of networkd-broker service eg. enable debug, run `systemctl edit networkd-broker.service`
+
+./etc/systemd/system/networkd-broker.service.d/override.conf
+[source,ini]
+----
+[Service]
+Type=notify
+Environment='RUST_LOG=networkd_broker=debug'
+ExecStart=
+ExecStart=/usr/bin/networkd-broker
+----
+
 == Usage
 
 The scripts for any network event need to be putted (or symlink) in its corresponding directory as shown below.
