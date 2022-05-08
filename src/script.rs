@@ -198,7 +198,6 @@ mod tests {
     use super::*;
     use std::ffi::OsStr;
     use std::fs::{self, DirBuilder};
-    use std::io::{self, Write};
     use std::os::unix::fs::OpenOptionsExt;
     use tempfile::TempDir;
     use users::{get_current_gid, get_current_uid};
@@ -225,7 +224,6 @@ mod tests {
     #[test]
     fn test_get_scripts_in() {
         let temp_dir = setup_get_scripts_in();
-        // setup_helper_inspect_output(temp_dir.path());
         let broker_root = temp_dir.path().join("etc/networkd/broker.d");
         let uid = get_current_uid();
         let gid = get_current_gid();
@@ -281,13 +279,11 @@ mod tests {
         // Create directory for each state
         for path in [
             "carrier.d",
-            // "configured.d",
-            "configuring.d",
             "degraded.d",
-            // "dormant.d",
-            // "no-carrier.d",
-            // "off.d",
-            // "routable.d",
+            "dormant.d",
+            "no-carrier.d",
+            "off.d",
+            "routable.d",
         ]
         .iter()
         {
@@ -336,21 +332,5 @@ mod tests {
         }
 
         temp_dir
-    }
-
-    #[allow(dead_code)]
-    fn setup_helper_inspect_output<P>(path: P)
-    where
-        P: Into<PathBuf>,
-    {
-        let output = Command::new("tree")
-            .args(&["-pug", path.into().to_str().unwrap()])
-            .output()
-            .expect("tree command failed to start");
-        println!("status: {}", output.status);
-        io::stdout().write_all(&output.stdout).unwrap();
-        io::stderr().write_all(&output.stderr).unwrap();
-
-        assert!(output.status.success());
     }
 }

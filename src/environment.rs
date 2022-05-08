@@ -40,7 +40,6 @@ impl Environments {
         self
     }
 
-    // TODO: Implement
     pub fn pack_from(&mut self, event: &LinkEvent) -> Result<()> {
         self.add(ScriptEnvironment::DeviceIface, event.iface.clone())
             .add(ScriptEnvironment::BrokerAction, event.state.clone())
