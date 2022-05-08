@@ -1,4 +1,4 @@
-use crate::{environment::Environments, link::LinkStatus};
+use crate::environment::Environments;
 use anyhow::{anyhow, Result};
 use std::{
     collections::HashMap,
@@ -13,30 +13,17 @@ use wait_timeout::ChildExt;
 use walkdir::WalkDir;
 
 #[derive(Debug)]
-pub struct Arguments {
-    state: String,
-    iface: String,
+pub struct ScriptArguments {
+    pub state: String,
+    pub iface: String,
 }
 
-impl Arguments {
-    pub fn new() -> Arguments {
-        Arguments {
+impl ScriptArguments {
+    pub fn new() -> ScriptArguments {
+        ScriptArguments {
             state: String::new(),
             iface: String::new(),
         }
-    }
-
-    pub fn state(&mut self, state: &LinkStatus) -> &mut Arguments {
-        self.state = state.to_string();
-        self
-    }
-
-    pub fn iface<S>(&mut self, iface: S) -> &mut Arguments
-    where
-        S: Into<String>,
-    {
-        self.iface = iface.into();
-        self
     }
 
     pub fn pack(&self) -> Vec<&String> {
@@ -47,10 +34,10 @@ impl Arguments {
 #[derive(Debug)]
 pub struct Script {
     path: PathBuf,
-    args: Option<Arc<Arguments>>,
-    envs: Option<Arc<Environments>>,
+    pub args: Option<Arc<ScriptArguments>>,
+    pub envs: Option<Arc<Environments>>,
     no_wait: bool,
-    timeout: u64,
+    pub timeout: u64,
 }
 
 impl Script {
@@ -74,47 +61,30 @@ impl Script {
         }
     }
 
-    pub fn path(&self) -> &str {
-        self.path.to_str().unwrap()
-    }
-
-    pub fn args(&mut self, args: Option<Arc<Arguments>>) -> &mut Script {
-        self.args = args;
-        self
-    }
-
-    pub fn envs(&mut self, envs: Option<Arc<Environments>>) -> &mut Script {
-        self.envs = envs;
-        self
-    }
-
-    pub fn timeout(&mut self, secs: u64) -> &mut Script {
-        self.timeout = secs;
-        self
-    }
-
     pub fn execute(&self) -> Result<()> {
+        let path = self.path.to_str().unwrap();
+
         if self.no_wait {
-            info!("Try to execute (nowait) {}", self.path());
+            info!("Try to execute (nowait) {}", path);
             match self.execute_nowait() {
                 Ok(_) => {
-                    info!("Executed (nowait) {}", self.path());
+                    info!("Executed (nowait) {}", path);
                     Ok(())
                 }
                 Err(e) => {
-                    warn!("Execute failed {}", self.path());
+                    warn!("Execute failed {}", path);
                     Err(e)
                 }
             }
         } else {
-            info!("Try to execute {}", self.path());
+            info!("Try to execute {}", path);
             match self.execute_wait(self.timeout) {
                 Ok(_) => {
-                    info!("Executed {}", self.path());
+                    info!("Executed {}", path);
                     Ok(())
                 }
                 Err(e) => {
-                    warn!("Execute timeout {}", self.path());
+                    warn!("Execute timeout {}", path);
                     Err(e)
                 }
             }
@@ -235,9 +205,10 @@ mod tests {
 
     #[test]
     fn test_arguments_order() {
-        let mut args = Arguments::new();
-        args.state(&LinkStatus::Unmanaged).iface("eth0");
-        assert_eq!(args.pack(), vec!["unmanaged", "eth0"]);
+        let mut args = ScriptArguments::new();
+        args.state = "routable".to_string();
+        args.iface = "eth0".to_string();
+        assert_eq!(args.pack(), vec!["routable", "eth0"]);
     }
 
     #[test]

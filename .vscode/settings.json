@@ -9,6 +9,7 @@
     "ESSID",
     "ffidisp",
     "IFACE",
+    "ifindex",
     "libsystemd",
     "networkctl",
     "networkd",
@@ -19,6 +20,8 @@
     "udev",
     "veth",
     "wimax",
-    "wlan"
+    "wlan",
+    "zbus",
+    "zvariant"
   ]
 }

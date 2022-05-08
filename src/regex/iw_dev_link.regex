@@ -1,3 +1,0 @@
-(?x)
-^Connected\x20to\x20(?P<station>[[:xdigit:]]{2}:[[:xdigit:]]{2}:[[:xdigit:]]{2}:[[:xdigit:]]{2}:[[:xdigit:]]{2}:[[:xdigit:]]{2})\x20.*\n
-\s+SSID:\x20(?P<ssid>.*)

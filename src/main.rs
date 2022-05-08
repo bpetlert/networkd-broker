@@ -1,4 +1,5 @@
 use anyhow::Result;
+use async_std::task;
 use clap::Parser;
 use std::process;
 use tracing::{debug, error, info, warn};
@@ -6,8 +7,8 @@ use tracing_subscriber::EnvFilter;
 
 mod args;
 mod broker;
+mod dbus_interface;
 mod environment;
-mod extcommand;
 mod launcher;
 mod link;
 mod script;
@@ -27,12 +28,12 @@ fn init_log() -> Result<()> {
     Ok(())
 }
 
-fn run_app() -> Result<()> {
+async fn run_app() -> anyhow::Result<()> {
     let arguments = Arguments::parse();
     init_log().expect("Initialize logging");
     debug!("Run with {:?}", arguments);
 
-    let broker = Broker::new(arguments.script_dir, arguments.timeout, arguments.json);
+    let broker = Broker::new(arguments.script_dir, arguments.timeout);
     debug!("Start event broker with {:?}", broker);
 
     if arguments.run_startup_triggers {
@@ -42,11 +43,11 @@ fn run_app() -> Result<()> {
         }
     }
 
-    broker.listen()
+    broker.listen().await
 }
 
 fn main() {
-    process::exit(match run_app() {
+    process::exit(match task::block_on(run_app()) {
         Ok(_) => 0,
         Err(err) => {
             error!("{}", err);
