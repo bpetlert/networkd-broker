@@ -6,7 +6,7 @@ pkgdesc="An event broker daemon for systemd-networkd"
 arch=('x86_64')
 url="https://github.com/bpetlert/networkd-broker"
 license=('GPL3')
-depends=('systemd' 'iw')
+depends=('systemd')
 makedepends=(cargo)
 provides=("${pkgname}")
 conflicts=("${pkgname}")
@@ -43,7 +43,7 @@ package() {
 
   install -Dm644 "$startdir/networkd-broker.service" "$pkgdir/usr/lib/systemd/system/networkd-broker.service"
 
-  install -dm755 "$pkgdir/etc/networkd/broker.d/"{carrier.d,configured.d,configuring.d,degraded.d,dormant.d,linger.d,no-carrier.d,off.d,routable.d,unmanaged.d}
+  install -dm755 "$pkgdir/etc/networkd/broker.d/"{carrier.d,degraded.d,dormant.d,no-carrier.d,off.d,routable.d}
 
   install -Dm644 "$startdir/README.adoc" "$pkgdir/usr/share/doc/${pkgname}/README.adoc"
   install -Dm644 "$startdir/LICENSE" "$pkgdir/usr/share/licenses/${pkgname}/LICENSE"
