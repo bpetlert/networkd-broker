@@ -63,16 +63,16 @@ impl Broker {
         let mut stream = MessageStream::from(&self.dbus_conn);
 
         debug!("Notify systemd that we are ready :)");
-        let _ = daemon::notify(false, &[NotifyState::Ready]).expect("Notify systemd: ready");
+        let _ = daemon::notify(false, &[NotifyState::Ready]).expect("Notify systemd: Ready");
 
-        debug!("Start listening for link event...");
+        debug!("Start listening to link events...");
         let _ = daemon::notify(
             false,
             &[NotifyState::Status(
-                "Start listening for link event...".to_string(),
+                "Start listening to link events...".to_string(),
             )],
         )
-        .expect("Notify systemd: Start listening for link event...");
+        .expect("Notify systemd: Start listening to link events...");
 
         futures_util::try_join!(async {
             while let Some(msg) = stream.next().await {
