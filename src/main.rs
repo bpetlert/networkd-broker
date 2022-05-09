@@ -33,8 +33,7 @@ async fn run_app() -> anyhow::Result<()> {
     init_log().expect("Initialize logging");
     debug!("Run with {:?}", arguments);
 
-    let broker = Broker::new(arguments.script_dir, arguments.timeout);
-    debug!("Start event broker with {:?}", broker);
+    let mut broker = Broker::new(arguments.script_dir, arguments.timeout).await?;
 
     if arguments.run_startup_triggers {
         info!("Found '--run-startup-triggers'. Start execute all scripts for the current state for each interface");

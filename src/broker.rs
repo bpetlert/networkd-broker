@@ -9,7 +9,7 @@ use crate::{
 use anyhow::{anyhow, Result};
 use futures_util::stream::StreamExt;
 use libsystemd::daemon::{self, NotifyState};
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use tracing::{debug, error, info, warn};
 use zbus::{Connection, Message, MessageStream};
 
@@ -19,29 +19,36 @@ pub struct Broker {
     script_dir: PathBuf,
     timeout: u64,
     launcher: Launcher,
+    dbus_conn: Connection,
+    link_state_cache: BTreeMap<String, String>,
 }
 
 impl Broker {
-    pub fn new<P>(script_dir: P, timeout: u64) -> Broker
+    pub async fn new<P>(script_dir: P, timeout: u64) -> Result<Broker>
     where
         P: Into<PathBuf>,
     {
         debug!("Start script launcher");
         let launcher = Launcher::new();
 
-        Broker {
+        debug!("Connect to System DBus");
+        let dbus_conn = Connection::system().await?;
+
+        debug!("Initialize link state cache");
+        let link_state_cache = Broker::init_link_state_cache(&dbus_conn).await?;
+
+        Ok(Broker {
             script_dir: script_dir.into(),
             timeout,
             launcher,
-        }
+            dbus_conn,
+            link_state_cache,
+        })
     }
 
-    pub async fn listen(&self) -> Result<()> {
-        debug!("Connect to System DBus");
-        let conn = Connection::system().await?;
-
+    pub async fn listen(&mut self) -> Result<()> {
         debug!("Create filter proxy");
-        let proxy = zbus::fdo::DBusProxy::new(&conn).await?;
+        let proxy = zbus::fdo::DBusProxy::new(&self.dbus_conn).await?;
         proxy
             .add_match(
                 "\
@@ -53,12 +60,20 @@ impl Broker {
             .await?;
 
         debug!("Create message stream");
-        let mut stream = MessageStream::from(&conn);
+        let mut stream = MessageStream::from(&self.dbus_conn);
 
         debug!("Notify systemd that we are ready :)");
-        let _ = daemon::notify(false, &[NotifyState::Ready]);
+        let _ = daemon::notify(false, &[NotifyState::Ready]).expect("Notify systemd: ready");
 
-        info!("Start listening for link event.");
+        debug!("Start listening for link event...");
+        let _ = daemon::notify(
+            false,
+            &[NotifyState::Status(
+                "Start listening for link event...".to_string(),
+            )],
+        )
+        .expect("Notify systemd: Start listening for link event...");
+
         futures_util::try_join!(async {
             while let Some(msg) = stream.next().await {
                 let msg: Arc<Message> = match msg {
@@ -72,9 +87,27 @@ impl Broker {
                     }
                 };
 
-                match LinkEvent::new(&msg, &conn).await {
+                match LinkEvent::new(&msg, &self.dbus_conn).await {
                     Ok(link_event) => {
                         debug!("Link Event: {link_event}");
+
+                        match self.link_state_cache.get_mut(&link_event.iface) {
+                            Some(previous_operational_state) => {
+                                if *previous_operational_state == link_event.state {
+                                    debug!("Skip event, no change in OperationalState");
+                                    continue;
+                                }
+
+                                debug!("Update link state cache of {}", link_event.iface);
+                                *previous_operational_state = link_event.state.clone();
+                            }
+                            None => {
+                                debug!("Insert new link state cache");
+                                self.link_state_cache
+                                    .insert(link_event.iface.clone(), link_event.state.clone());
+                            }
+                        }
+
                         if let Err(err) = self.respond(&link_event) {
                             warn!("{err}");
                         }
@@ -89,8 +122,7 @@ impl Broker {
     }
 
     pub async fn trigger_all(&self) -> Result<()> {
-        let conn = Connection::system().await?;
-        let proxy = NetworkManagerProxy::new(&conn).await?;
+        let proxy = NetworkManagerProxy::new(&self.dbus_conn).await?;
         let links = proxy.list_links().await?;
         for (index, name, path) in links {
             info!("run-startup-triggers on '{name}'");
@@ -154,5 +186,22 @@ impl Broker {
         }
 
         Ok(())
+    }
+
+    async fn init_link_state_cache(conn: &Connection) -> Result<BTreeMap<String, String>> {
+        let proxy = NetworkManagerProxy::new(conn).await?;
+        let links = proxy.list_links().await?;
+        let mut cache: BTreeMap<String, String> = BTreeMap::new();
+        for (index, name, _path) in links {
+            let describe_link = proxy.describe_link(index).await?;
+
+            let link_details = match serde_json::from_str::<LinkDetails>(&describe_link) {
+                Ok(link_details) => link_details,
+                Err(err) => return Err(anyhow!("Cannot get link state of {name}: {err}")),
+            };
+
+            cache.insert(name, link_details.operational_state);
+        }
+        Ok(cache)
     }
 }
