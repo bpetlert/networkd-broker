@@ -132,7 +132,8 @@ fi
 
 == Design
 
-image::docs/assets/networkd-broker.svg[Sequence Diagram]
+[link=https://raw.githubusercontent.com/bpetlert/networkd-broker/main/docs/assets/networkd-broker.svg?sanitize=true&raw=true]
+image::https://raw.githubusercontent.com/bpetlert/networkd-broker/main/docs/assets/networkd-broker.svg?sanitize=true&raw=true[Sequence Diagram]
 
 == License
 
