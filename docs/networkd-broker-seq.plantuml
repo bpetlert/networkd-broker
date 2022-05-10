@@ -1,35 +1,40 @@
 @startuml networkd-broker
 
-skinparam defaultFontName "FuraCode Nerd Font"
+skinparam defaultFontName "Helvetica"
 skinparam defaultFontSize 13
 skinparam defaultFontColor black
 skinparam BackgroundColor Azure
+skinparam ParticipantPadding 20
 skinparam BoxPadding 10
 skinparam shadowing false
 
-participant DBus
+participant "**DBus**" as DBus
+
 box "networkd-broker" #DeepSkyBlue
 participant Broker
 participant Script
 participant Environments
 participant Launcher
 end box
-participant System
+
+participant "**System**" as System
 
 autonumber
 
 == Initialization ==
-Launcher -> Launcher ++ : recv
-Broker -> Broker ++ : listen
+Launcher ->> Launcher ++ : receive script queue
+Broker ->> Broker ++ : listen to link events
 
 == Receive Signal ==
-DBus -> Broker ++ : signal
+DBus -> Broker ++ : link event signal
 Broker -> Script ++ : get script list
 return script list
 Broker -> Environments ++ : fetch env
 return env
 Broker -> Launcher --: send script list to queue
-Launcher -> System ++ : execute script
+
+== Execute Script Queue ==
+Launcher ->> System ++ : execute script
 return done
 
 @enduml
