@@ -212,68 +212,6 @@ mod tests {
     use tempfile::TempDir;
     use users::{get_current_gid, get_current_uid};
 
-    #[test]
-    fn test_arguments_order() {
-        let mut args = ScriptArguments::new();
-        args.state = "routable".to_string();
-        args.iface = "eth0".to_string();
-        assert_eq!(args.pack(), vec!["routable", "eth0"]);
-    }
-
-    #[test]
-    fn test_script_new() {
-        // Normal script
-        let script = Script::new("/etc/networkd/broker.d/carrier.d/00-script");
-        assert!(!script.no_wait);
-
-        // No-wait script
-        let script = Script::new("/etc/networkd/broker.d/carrier.d/00-script-nowait");
-        assert!(script.no_wait);
-    }
-
-    #[test]
-    fn test_get_scripts_in() {
-        let temp_dir = setup_get_scripts_in();
-        let broker_root = temp_dir.path().join("etc/networkd/broker.d");
-        let uid = get_current_uid();
-        let gid = get_current_gid();
-
-        // 3 scripts of current uid/gid for carrier state
-        // 00-executable
-        // 05-executable-nowait
-        // 10-executable
-        let carrier_d = broker_root.join("carrier.d");
-        let scripts = Script::get_scripts_in(&carrier_d, Some(uid), Some(gid)).unwrap();
-        assert_eq!(scripts.len(), 3);
-        assert_eq!(
-            scripts[0].path.file_name(),
-            Some(OsStr::new("00-executable"))
-        );
-        assert_eq!(
-            scripts[1].path.file_name(),
-            Some(OsStr::new("05-executable-nowait"))
-        );
-        assert_eq!(
-            scripts[2].path.file_name(),
-            Some(OsStr::new("10-executable"))
-        );
-
-        // No script for configuring state
-        let configuring_d = broker_root.join("configuring.d");
-        let result = Script::get_scripts_in(&configuring_d, Some(uid), Some(gid));
-        assert!(result.is_err());
-
-        // No script for root in degraded.d
-        let degraded_d = broker_root.join("degraded.d");
-        let result = Script::get_scripts_in(&degraded_d, None, None);
-        assert!(result.is_err());
-
-        // No directory for routable state
-        let routable_d = broker_root.join("routable.d");
-        let result = Script::get_scripts_in(&routable_d, Some(uid), Some(gid));
-        assert!(result.is_err());
-    }
-
     fn setup_get_scripts_in() -> tempfile::TempDir {
         let temp_dir = TempDir::new().unwrap();
         assert!(temp_dir.path().to_owned().exists());
@@ -342,5 +280,67 @@ mod tests {
         }
 
         temp_dir
+    }
+
+    #[test]
+    fn test_arguments_order() {
+        let mut args = ScriptArguments::new();
+        args.state = "routable".to_string();
+        args.iface = "eth0".to_string();
+        assert_eq!(args.pack(), vec!["routable", "eth0"]);
+    }
+
+    #[test]
+    fn test_script_new() {
+        // Normal script
+        let script = Script::new("/etc/networkd/broker.d/carrier.d/00-script");
+        assert!(!script.no_wait);
+
+        // No-wait script
+        let script = Script::new("/etc/networkd/broker.d/carrier.d/00-script-nowait");
+        assert!(script.no_wait);
+    }
+
+    #[test]
+    fn test_get_scripts_in() {
+        let temp_dir = setup_get_scripts_in();
+        let broker_root = temp_dir.path().join("etc/networkd/broker.d");
+        let uid = get_current_uid();
+        let gid = get_current_gid();
+
+        // 3 scripts of current uid/gid for carrier state
+        // 00-executable
+        // 05-executable-nowait
+        // 10-executable
+        let carrier_d = broker_root.join("carrier.d");
+        let scripts = Script::get_scripts_in(&carrier_d, Some(uid), Some(gid)).unwrap();
+        assert_eq!(scripts.len(), 3);
+        assert_eq!(
+            scripts[0].path.file_name(),
+            Some(OsStr::new("00-executable"))
+        );
+        assert_eq!(
+            scripts[1].path.file_name(),
+            Some(OsStr::new("05-executable-nowait"))
+        );
+        assert_eq!(
+            scripts[2].path.file_name(),
+            Some(OsStr::new("10-executable"))
+        );
+
+        // No script for configuring state
+        let configuring_d = broker_root.join("configuring.d");
+        let result = Script::get_scripts_in(&configuring_d, Some(uid), Some(gid));
+        assert!(result.is_err());
+
+        // No script for root in degraded.d
+        let degraded_d = broker_root.join("degraded.d");
+        let result = Script::get_scripts_in(&degraded_d, None, None);
+        assert!(result.is_err());
+
+        // No directory for routable state
+        let routable_d = broker_root.join("routable.d");
+        let result = Script::get_scripts_in(&routable_d, Some(uid), Some(gid));
+        assert!(result.is_err());
     }
 }

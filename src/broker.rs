@@ -205,3 +205,32 @@ impl Broker {
         Ok(cache)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use async_std::task;
+    use duct::cmd;
+
+    #[test]
+    fn test_init_link_state_cache() {
+        // Get all network links using NetworkctlCtl command
+        let stdout = cmd!("networkctl", "--no-pager", "--no-legend", "list")
+            .pipe(cmd!("awk", "{ print $2, $4 }"))
+            .read()
+            .unwrap();
+        let links: Vec<Vec<&str>> = stdout
+            .lines()
+            .into_iter()
+            .map(|line| line.split(' ').collect())
+            .collect();
+
+        task::block_on(async {
+            let dbus_conn = Connection::system().await.unwrap();
+            let cache = Broker::init_link_state_cache(&dbus_conn).await.unwrap();
+            for link in links {
+                assert_eq!(cache.get(link[0]), Some(&link[1].to_string()));
+            }
+        });
+    }
+}
