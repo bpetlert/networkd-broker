@@ -6,4 +6,4 @@ build: assets
 # Generate assets
 assets:
   mkdir -p assets
-  plantuml -tpng networkd-broker-seq.plantuml -o assets/ 2>/dev/null
+  plantuml -tsvg networkd-broker-seq.plantuml -o assets/ 2>/dev/null
