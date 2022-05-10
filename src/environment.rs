@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::collections::HashMap;
-use strum_macros::{Display, EnumString};
+use strum::{Display, EnumString};
 
 use crate::link::LinkEvent;
 
