@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Context, Result};
 use async_std::task;
 use clap::Parser;
 use std::process;
@@ -20,17 +20,20 @@ fn init_log() -> Result<()> {
         Ok(f) => f,
         Err(_) => EnvFilter::try_new("networkd_broker=warn")?,
     };
-    tracing_subscriber::fmt()
+    if let Err(err) = tracing_subscriber::fmt()
         .with_env_filter(filter)
         .without_time()
         .try_init()
-        .expect("Initialize tracing-subscriber");
+    {
+        bail!("Failed to initialize tracing subscriber: {err}");
+    }
+
     Ok(())
 }
 
 async fn run_app() -> anyhow::Result<()> {
     let arguments = Arguments::parse();
-    init_log().expect("Initialize logging");
+    init_log().context("Failed to initialize logging")?;
     debug!("Run with {:?}", arguments);
 
     let mut broker = Broker::new(arguments.script_dir, arguments.timeout).await?;

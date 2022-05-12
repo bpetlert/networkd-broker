@@ -6,7 +6,7 @@ use crate::{
     script::{Script, ScriptArguments},
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use futures_util::stream::StreamExt;
 use libsystemd::daemon::{self, NotifyState};
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
@@ -63,7 +63,8 @@ impl Broker {
         let mut stream = MessageStream::from(&self.dbus_conn);
 
         debug!("Notify systemd that we are ready :)");
-        let _ = daemon::notify(false, &[NotifyState::Ready]).expect("Notify systemd: Ready");
+        let _ = daemon::notify(false, &[NotifyState::Ready])
+            .context("Failed to notify systemd: ready")?;
 
         debug!("Start listening to link events...");
         let _ = daemon::notify(
@@ -72,7 +73,7 @@ impl Broker {
                 "Start listening to link events...".to_string(),
             )],
         )
-        .expect("Notify systemd: Start listening to link events...");
+        .context("Failed to notify systemd: Start listening to link events...")?;
 
         futures_util::try_join!(async {
             while let Some(msg) = stream.next().await {
