@@ -46,10 +46,7 @@ To change the options of networkd-broker service eg. enable debug, run `systemct
 [source,ini]
 ----
 [Service]
-Type=notify
 Environment='RUST_LOG=networkd_broker=debug'
-ExecStart=
-ExecStart=/usr/bin/networkd-broker
 ----
 
 == Usage
