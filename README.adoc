@@ -40,13 +40,23 @@ $ systemctl start networkd-broker.service
 
 == Configuration
 
-To change the options of networkd-broker service eg. enable debug, run `systemctl edit networkd-broker.service`
+To change the options of networkd-broker service e.g. enable debug, run `systemctl edit networkd-broker.service`
 
 ./etc/systemd/system/networkd-broker.service.d/override.conf
 [source,ini]
 ----
 [Service]
 Environment='RUST_LOG=networkd_broker=debug'
+----
+
+Or enable `--run-startup-triggers`
+
+./etc/systemd/system/networkd-broker.service.d/override.conf
+[source,ini]
+----
+[Service]
+ExecStart=
+ExecStart=/usr/bin/networkd-broker --run-startup-triggers
 ----
 
 == Usage
