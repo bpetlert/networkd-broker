@@ -104,7 +104,7 @@ The following environment variables are being passed to each script:
 === Example script
 
 The script below activate/deactivate https://wiki.archlinux.org/index.php/Chrony[Chrony] correspond to link state of `wlp3s0` link.
-This script must be put (or symlink) in `/etc/networkd/broker.d/routable.d`, `/etc/networkd/broker.d/configured.d`, and `/etc/networkd/broker.d/no-carrier.d`.
+This script must be put (or symlink) in `/etc/networkd/broker.d/routable.d`, and `/etc/networkd/broker.d/no-carrier.d`.
 
 .chrony-switch
 [source,bash]
