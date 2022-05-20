@@ -35,10 +35,11 @@ release VERSION:
   git commit --message="chore(release): {{VERSION}}"
   git tag --sign --annotate {{VERSION}} --message="version {{VERSION}}" --edit
 
-# Update dependencies
+# Update and audit dependencies
 update-deps:
   cargo upgrade
   cargo update
+  cargo audit
 
 # Crate Arch package from GIT source
 makepkg:
