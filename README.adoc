@@ -137,6 +137,21 @@ elif [[ "$STATE" = "no-carrier" ]]; then
 fi
 ----
 
+./etc/networkd
+[source]
+----
+/etc/networkd
+└── broker.d
+    ├── carrier.d
+    ├── degraded.d
+    ├── dormant.d
+    ├── no-carrier.d
+    │   └── 10-chrony-switch -> /usr/local/bin/chrony-switch
+    ├── off.d
+    └── routable.d
+        └── 10-chrony-switch-nowait -> /usr/local/bin/chrony-switch
+----
+
 == Design
 
 [link=https://raw.githubusercontent.com/bpetlert/networkd-broker/main/docs/assets/networkd-broker.svg?sanitize=true&raw=true]
