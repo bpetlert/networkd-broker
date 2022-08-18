@@ -1,6 +1,6 @@
 use clap::Parser;
 
-#[derive(PartialEq, Debug, Parser)]
+#[derive(PartialEq, Eq, Debug, Parser)]
 #[clap(about, version, author)]
 pub struct Arguments {
     /// Location under which to look for scripts

@@ -4,7 +4,7 @@ use strum::{Display, EnumString};
 
 use crate::link::LinkEvent;
 
-#[derive(Debug, PartialEq, EnumString, Display)]
+#[derive(Debug, PartialEq, Eq, EnumString, Display)]
 pub enum ScriptEnvironment {
     #[strum(serialize = "NWD_DEVICE_IFACE")]
     DeviceIface,
