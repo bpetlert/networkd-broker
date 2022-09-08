@@ -108,7 +108,14 @@ impl Script {
             args[1]
         );
         match Command::new(&self.path).args(&args).envs(envs).spawn() {
-            Ok(_) => Ok(()),
+            Ok(mut script) => {
+                // Prevent zombie process by spawning thread to wait for the process to finish
+                let msg = format!("{} wasn't running", &self.path.to_str().unwrap());
+                std::thread::spawn(move || {
+                    script.wait().expect(&msg);
+                });
+                Ok(())
+            }
             Err(e) => Err(anyhow!(
                 "Execute `{}` failed: {}",
                 &self.path.to_str().unwrap(),
