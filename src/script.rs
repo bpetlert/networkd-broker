@@ -110,9 +110,13 @@ impl Script {
         match Command::new(&self.path).args(&args).envs(envs).spawn() {
             Ok(mut script) => {
                 // Prevent zombie process by spawning thread to wait for the process to finish
-                let msg = format!("{} wasn't running", &self.path.to_str().unwrap());
+                let script_path = self.path.to_str().unwrap().to_owned();
                 std::thread::spawn(move || {
-                    script.wait().expect(&msg);
+                    if let Err(err) = script.wait() {
+                        warn!("{script_path} wasn't running, {err}");
+                    } else {
+                        info!("Finished {script_path}");
+                    }
                 });
                 Ok(())
             }
@@ -150,14 +154,16 @@ impl Script {
             .spawn()
             .unwrap();
         match script.wait_timeout(timeout).unwrap() {
-            Some(_) => Ok(()),
+            Some(_) => {
+                info!("Finished {}", &self.path.to_str().unwrap());
+                Ok(())
+            }
             None => {
                 // script hasn't exited yet
                 script.kill().unwrap();
                 Err(anyhow!(
-                    "Execute `{}` is timeout: {} seconds",
-                    &self.path.to_str().unwrap(),
-                    secs
+                    "Execute `{}` is timeout: {secs} seconds",
+                    &self.path.to_str().unwrap()
                 ))
             }
         }
