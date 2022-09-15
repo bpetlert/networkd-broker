@@ -47,14 +47,14 @@ impl LinkEvent {
     pub async fn new(msg: &Message, conn: &::zbus::Connection) -> Result<Box<LinkEvent>> {
         if msg.message_type() != MessageType::Signal {
             return Err(anyhow!(
-                "Event message `{:?}` is not dbus signal",
+                "Event message {:?} is not dbus signal",
                 msg.message_type()
             ));
         }
 
         if &*msg.interface().unwrap() != "org.freedesktop.DBus.Properties" {
             return Err(anyhow!(
-                "`{}` is not 'org.freedesktop.DBus.Properties'",
+                "{} is not 'org.freedesktop.DBus.Properties'",
                 &*msg.interface().unwrap()
             ));
         }

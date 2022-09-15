@@ -107,19 +107,23 @@ impl Script {
             Ok(mut script) => {
                 // Prevent zombie process by spawning thread to wait for the process to finish
                 let script_path = self.path.to_str().unwrap().to_owned();
+                let arg0 = args[0].clone();
+                let arg1 = args[1].clone();
                 std::thread::spawn(move || match script.wait() {
                     Ok(exit_code) => {
-                        info!("Finished {script_path} with exit code {exit_code}");
+                        info!("Finished {script_path} {} {}, {exit_code}", arg0, arg1);
                     }
                     Err(err) => {
-                        warn!("{script_path} wasn't running, {err}");
+                        warn!("{script_path} {} {} wasn't running, {err}", arg0, arg1);
                     }
                 });
                 Ok(())
             }
             Err(err) => Err(anyhow!(
-                "Execute `{}` failed: {}",
+                "Execute {} {} {} failed, {}",
                 &self.path.to_str().unwrap(),
+                args[0],
+                args[1],
                 err
             )),
         }
@@ -149,8 +153,10 @@ impl Script {
             Ok(script) => script,
             Err(err) => {
                 return Err(anyhow!(
-                    "Execute `{}` failed: {}",
+                    "Execute {} {} {} failed, {}",
                     &self.path.to_str().unwrap(),
+                    args[0],
+                    args[1],
                     err
                 ));
             }
@@ -159,8 +165,10 @@ impl Script {
         match script.wait_timeout(timeout)? {
             Some(exit_code) => {
                 info!(
-                    "Finished {} with exit code {exit_code}",
-                    &self.path.to_str().unwrap()
+                    "Finished {} {} {}, {exit_code}",
+                    &self.path.to_str().unwrap(),
+                    args[0],
+                    args[1]
                 );
                 Ok(())
             }
@@ -168,8 +176,10 @@ impl Script {
                 // script hasn't exited yet
                 script.kill()?;
                 Err(anyhow!(
-                    "Execute timeout {}, >= {secs} seconds",
-                    &self.path.to_str().unwrap()
+                    "Execute timeout {} {} {}, >= {secs} seconds",
+                    &self.path.to_str().unwrap(),
+                    args[0],
+                    args[1]
                 ))
             }
         }
@@ -183,7 +193,7 @@ impl Script {
 
         // Path exists?
         if !path.exists() {
-            return Err(anyhow!("`{}` does not exist", path.to_str().unwrap()));
+            return Err(anyhow!("{} does not exist", path.to_str().unwrap()));
         }
 
         let uid = uid.unwrap_or(0);
@@ -215,7 +225,7 @@ impl Script {
         }
 
         if scripts.is_empty() {
-            return Err(anyhow!("No script in `{}`.", path.to_str().unwrap()));
+            return Err(anyhow!("No script in {}.", path.to_str().unwrap()));
         }
 
         Ok(scripts)
