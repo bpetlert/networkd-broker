@@ -62,31 +62,27 @@ impl Script {
     }
 
     pub fn execute(&self) -> Result<()> {
-        let path = self.path.to_str().unwrap();
-
         if self.no_wait {
             match self.execute_nowait() {
                 Ok(_) => {
-                    info!("Executed (nowait) {}", path);
-                    Ok(())
+                    info!("Executed (nowait) {}", self.path.to_str().unwrap());
                 }
-                Err(e) => {
-                    warn!("Execute failed {}", path);
-                    Err(e)
+                Err(err) => {
+                    warn!("{err}");
                 }
             }
         } else {
             match self.execute_wait(self.timeout) {
                 Ok(_) => {
-                    info!("Executed {}", path);
-                    Ok(())
+                    info!("Executed {}", self.path.to_str().unwrap());
                 }
-                Err(e) => {
-                    warn!("Execute timeout {}", path);
-                    Err(e)
+                Err(err) => {
+                    warn!("{err}");
                 }
             }
         }
+
+        Ok(())
     }
 
     pub fn execute_nowait(&self) -> Result<()> {
@@ -111,19 +107,20 @@ impl Script {
             Ok(mut script) => {
                 // Prevent zombie process by spawning thread to wait for the process to finish
                 let script_path = self.path.to_str().unwrap().to_owned();
-                std::thread::spawn(move || {
-                    if let Err(err) = script.wait() {
+                std::thread::spawn(move || match script.wait() {
+                    Ok(exit_code) => {
+                        info!("Finished {script_path} with exit code {exit_code}");
+                    }
+                    Err(err) => {
                         warn!("{script_path} wasn't running, {err}");
-                    } else {
-                        info!("Finished {script_path}");
                     }
                 });
                 Ok(())
             }
-            Err(e) => Err(anyhow!(
+            Err(err) => Err(anyhow!(
                 "Execute `{}` failed: {}",
                 &self.path.to_str().unwrap(),
-                e
+                err
             )),
         }
     }
@@ -148,21 +145,30 @@ impl Script {
             args[0],
             args[1]
         );
-        let mut script = Command::new(&self.path)
-            .args(&args)
-            .envs(envs)
-            .spawn()
-            .unwrap();
-        match script.wait_timeout(timeout).unwrap() {
-            Some(_) => {
-                info!("Finished {}", &self.path.to_str().unwrap());
+        let mut script = match Command::new(&self.path).args(&args).envs(envs).spawn() {
+            Ok(script) => script,
+            Err(err) => {
+                return Err(anyhow!(
+                    "Execute `{}` failed: {}",
+                    &self.path.to_str().unwrap(),
+                    err
+                ));
+            }
+        };
+
+        match script.wait_timeout(timeout)? {
+            Some(exit_code) => {
+                info!(
+                    "Finished {} with exit code {exit_code}",
+                    &self.path.to_str().unwrap()
+                );
                 Ok(())
             }
             None => {
                 // script hasn't exited yet
-                script.kill().unwrap();
+                script.kill()?;
                 Err(anyhow!(
-                    "Execute `{}` is timeout: {secs} seconds",
+                    "Execute timeout {}, >= {secs} seconds",
                     &self.path.to_str().unwrap()
                 ))
             }
@@ -218,6 +224,8 @@ impl Script {
 
 #[cfg(test)]
 mod tests {
+    use crate::environment::ScriptEnvironment;
+
     use super::*;
     use std::ffi::OsStr;
     use std::fs::{self, DirBuilder};
@@ -355,5 +363,92 @@ mod tests {
         let routable_d = broker_root.join("routable.d");
         let result = Script::get_scripts_in(&routable_d, Some(uid), Some(gid));
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_script_execute() {
+        let state = "routable".to_string();
+        let iface = "wlp3s0".to_string();
+
+        let mut args = ScriptArguments::new();
+        args.state = state.clone();
+        args.iface = iface.clone();
+        let shared_args = Arc::new(args);
+
+        let mut envs = Environments::new();
+        envs.add(ScriptEnvironment::DeviceIface, iface)
+            .add(ScriptEnvironment::BrokerAction, state)
+            .add(ScriptEnvironment::Json, "");
+        let shared_envs = Arc::new(envs);
+
+        // Should pass, wait
+        let mut script = Script::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test"
+        ));
+        script.args = Some(shared_args.clone());
+        script.envs = Some(shared_envs.clone());
+        assert!(script.execute().is_ok(), "Should pass (wait)");
+
+        // Should pass, no wait
+        let mut script = Script::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test-nowait"
+        ));
+        script.args = Some(shared_args.clone());
+        script.envs = Some(shared_envs.clone());
+        assert!(script.execute().is_ok(), "Should pass (nowait)");
+
+        // no-such-file should not cause panic, wait
+        let mut script = Script::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/no-such-file"
+        ));
+        script.args = Some(shared_args.clone());
+        script.envs = Some(shared_envs.clone());
+        let ret = script.execute();
+        assert!(ret.is_ok(), "no-such-file should not cause panic (wait)");
+
+        // no-such-file should not cause panic, nowait
+        let mut script = Script::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/no-such-file-nowait"
+        ));
+        script.args = Some(shared_args.clone());
+        script.envs = Some(shared_envs.clone());
+        let ret = script.execute();
+        assert!(ret.is_ok(), "no-such-file should not cause panic (nowait)");
+
+        // Script failure should not cause panic, wait
+        let mut script = Script::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test"
+        ));
+        script.args = Some(shared_args.clone());
+        script.envs = Some(shared_envs.clone());
+        std::env::set_var("SCRIPT_FAILURE", "1");
+        assert!(
+            script.execute().is_ok(),
+            "Script failure should not cause panic (wait)"
+        );
+
+        // Script failure should not cause panic, nowait
+        let mut script = Script::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test-nowait"
+        ));
+        script.args = Some(shared_args);
+        script.envs = Some(shared_envs);
+        std::env::set_var("SCRIPT_FAILURE", "1");
+        assert!(
+            script.execute().is_ok(),
+            "Script failure should not cause panic (nowait)"
+        );
     }
 }
