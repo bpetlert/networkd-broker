@@ -1,2 +1,2 @@
-*.rs linguist-detectable
-tests/scripts/* -linguist-detectable
+*.rs linguist-detectable=true
+*.sh linguist-detectable=false

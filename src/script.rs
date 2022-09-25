@@ -395,7 +395,7 @@ mod tests {
         let mut script = Script::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
-            "/script-execute-test"
+            "/script-execute-test.sh"
         ));
         script.args = Some(shared_args.clone());
         script.envs = Some(shared_envs.clone());
@@ -405,7 +405,7 @@ mod tests {
         let mut script = Script::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
-            "/script-execute-test-nowait"
+            "/script-execute-test-nowait.sh"
         ));
         script.args = Some(shared_args.clone());
         script.envs = Some(shared_envs.clone());
@@ -437,7 +437,7 @@ mod tests {
         let mut script = Script::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
-            "/script-execute-test"
+            "/script-execute-test.sh"
         ));
         script.args = Some(shared_args.clone());
         script.envs = Some(shared_envs.clone());
@@ -451,7 +451,7 @@ mod tests {
         let mut script = Script::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
-            "/script-execute-test-nowait"
+            "/script-execute-test-nowait.sh"
         ));
         script.args = Some(shared_args);
         script.envs = Some(shared_envs);
