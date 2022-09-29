@@ -14,7 +14,7 @@ run-debug +ARGS='':
 
 # Run test
 test +CASES='':
-  cargo test -- {{CASES}} --nocapture
+  cargo test {{CASES}}
 
 # Increase semver
 bump-version VERSION:
