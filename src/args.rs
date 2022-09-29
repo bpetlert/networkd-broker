@@ -29,8 +29,10 @@ mod tests {
     #[test]
     fn test_args() {
         // Default arguments
-        let args = Arguments::from_arg_matches(&Arguments::command().get_matches())
-            .expect("Paring argument");
+        let args = Arguments::from_arg_matches(
+            &Arguments::command().get_matches_from(vec![env!("CARGO_CRATE_NAME")]),
+        )
+        .expect("Paring argument");
         assert_eq!(args.script_dir, "/etc/networkd/broker.d".to_owned());
         assert!(!args.run_startup_triggers);
         assert_eq!(args.timeout, 20);
