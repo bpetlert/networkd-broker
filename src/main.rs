@@ -23,7 +23,6 @@ fn init_log() -> Result<()> {
     if let Err(err) = tracing_subscriber::fmt()
         .with_env_filter(filter)
         .without_time()
-        .with_ansi(false)
         .try_init()
     {
         bail!("Failed to initialize tracing subscriber: {err}");

@@ -29,7 +29,7 @@ tracing = { version = "0.1.36", features = [
     "max_level_debug",
     "release_max_level_debug",
 ] }
-tracing-subscriber = { version = "0.3.15", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.15", features = ["env-filter", "fmt"], default-features = false }
 wait-timeout = "0.2.0"
 walkdir = "2.3.2"
 zbus = "3.1.0"
