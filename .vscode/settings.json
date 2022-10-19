@@ -11,6 +11,7 @@
     "IFACE",
     "ifindex",
     "libsystemd",
+    "mimalloc",
     "networkctl",
     "networkd",
     "serde",

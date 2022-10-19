@@ -1,8 +1,12 @@
 use anyhow::{bail, Context, Result};
 use async_std::task;
 use clap::Parser;
+use mimalloc::MiMalloc;
 use tracing::{debug, info, warn};
 use tracing_subscriber::EnvFilter;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 mod args;
 mod broker;
