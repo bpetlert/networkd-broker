@@ -8,6 +8,7 @@ url="https://github.com/bpetlert/networkd-broker"
 license=('GPL3')
 depends=('systemd')
 makedepends=(cargo)
+options=(!lto)
 provides=("${pkgname}")
 conflicts=("${pkgname}")
 
