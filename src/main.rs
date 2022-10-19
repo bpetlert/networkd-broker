@@ -1,8 +1,7 @@
 use anyhow::{bail, Context, Result};
 use async_std::task;
 use clap::Parser;
-use std::process;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 use tracing_subscriber::EnvFilter;
 
 mod args;
@@ -31,29 +30,21 @@ fn init_log() -> Result<()> {
     Ok(())
 }
 
-async fn run_app() -> anyhow::Result<()> {
-    let arguments = Arguments::parse();
-    init_log().context("Failed to initialize logging")?;
-    debug!("Run with {:?}", arguments);
+fn main() -> Result<()> {
+    task::block_on(async {
+        let arguments = Arguments::parse();
+        init_log().context("Failed to initialize logging")?;
+        debug!("Run with {:?}", arguments);
 
-    let mut broker = Broker::new(arguments.script_dir, arguments.timeout).await?;
+        let mut broker = Broker::new(arguments.script_dir, arguments.timeout).await?;
 
-    if arguments.run_startup_triggers {
-        info!("Found '--run-startup-triggers'. Start execute all scripts for the current state for each interface");
-        if let Err(err) = broker.trigger_all().await {
-            warn!("{}", err);
+        if arguments.run_startup_triggers {
+            info!("Found '--run-startup-triggers'. Start execute all scripts for the current state for each interface");
+            if let Err(err) = broker.trigger_all().await {
+                warn!("{}", err);
+            }
         }
-    }
 
-    broker.listen().await
-}
-
-fn main() {
-    process::exit(match task::block_on(run_app()) {
-        Ok(_) => 0,
-        Err(err) => {
-            error!("{}", err);
-            1
-        }
-    });
+        broker.listen().await
+    })
 }
