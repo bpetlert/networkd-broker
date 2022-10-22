@@ -5,7 +5,7 @@ use crate::{
     link::{LinkDetails, LinkEvent},
     script::{Script, ScriptArguments},
 };
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use futures_util::stream::StreamExt;
 use libsystemd::daemon::{self, NotifyState};
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
@@ -134,7 +134,7 @@ impl Broker {
 
             let link_details = match serde_json::from_str::<LinkDetails>(&describe_link) {
                 Ok(link_details) => link_details,
-                Err(err) => return Err(anyhow!("Cannot get link state of {name}: {err}")),
+                Err(err) => bail!("Cannot get link state of {name}: {err}"),
             };
 
             let event = Box::new(LinkEvent {
@@ -162,9 +162,7 @@ impl Broker {
         let script_path = self.script_dir.join(state_dir);
         let scripts = match Script::get_scripts_in(&script_path, None, None) {
             Ok(s) => s,
-            Err(err) => {
-                return Err(anyhow!("{err}"));
-            }
+            Err(err) => bail!("{err}"),
         };
 
         // Build script's arguments
@@ -200,7 +198,7 @@ impl Broker {
 
             let link_details = match serde_json::from_str::<LinkDetails>(&describe_link) {
                 Ok(link_details) => link_details,
-                Err(err) => return Err(anyhow!("Cannot get link state of {name}: {err}")),
+                Err(err) => bail!("Cannot get link state of {name}: {err}"),
             };
 
             cache.insert(name, link_details.operational_state);

@@ -1,5 +1,5 @@
 use crate::environment::Environments;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use std::{
     collections::HashMap,
     os::unix::fs::MetadataExt,
@@ -152,13 +152,13 @@ impl Script {
         let mut script = match Command::new(&self.path).args(&args).envs(envs).spawn() {
             Ok(script) => script,
             Err(err) => {
-                return Err(anyhow!(
+                bail!(
                     "Execute {} {} {} failed, {}",
                     &self.path.to_str().unwrap(),
                     args[0],
                     args[1],
                     err
-                ));
+                );
             }
         };
 
@@ -194,7 +194,7 @@ impl Script {
 
         // Path exists?
         if !path.exists() {
-            return Err(anyhow!("{} does not exist", path.to_str().unwrap()));
+            bail!("{} does not exist", path.to_str().unwrap());
         }
 
         let uid = uid.unwrap_or(0);
@@ -226,7 +226,7 @@ impl Script {
         }
 
         if scripts.is_empty() {
-            return Err(anyhow!("No script in {}.", path.to_str().unwrap()));
+            bail!("No script in {}.", path.to_str().unwrap());
         }
 
         Ok(scripts)

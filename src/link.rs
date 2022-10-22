@@ -1,9 +1,8 @@
-use anyhow::{anyhow, Result};
+use crate::dbus_interface::NetworkManagerProxy;
+use anyhow::{anyhow, bail, Result};
 use serde::Deserialize;
 use tracing::debug;
 use zbus::{Message, MessageType};
-
-use crate::dbus_interface::NetworkManagerProxy;
 
 #[derive(Deserialize)]
 pub struct LinkDetails {
@@ -46,23 +45,20 @@ impl LinkEvent {
     /// Extract link event from DBus signal message
     pub async fn new(msg: &Message, conn: &::zbus::Connection) -> Result<Box<LinkEvent>> {
         if msg.message_type() != MessageType::Signal {
-            return Err(anyhow!(
-                "Event message {:?} is not dbus signal",
-                msg.message_type()
-            ));
+            bail!("Event message {:?} is not dbus signal", msg.message_type());
         }
 
         if &*msg.interface().unwrap() != "org.freedesktop.DBus.Properties" {
-            return Err(anyhow!(
+            bail!(
                 "{} is not 'org.freedesktop.DBus.Properties'",
                 &*msg.interface().unwrap()
-            ));
+            );
         }
 
         let path: String = if let Some(path) = msg.path() {
             path.as_str().to_string()
         } else {
-            return Err(anyhow!("Invalid path: {:?}", &msg));
+            bail!("Invalid path: {:?}", &msg);
         };
 
         let link = LinkEvent::link_from_path(&path, conn).await?;
@@ -87,7 +83,7 @@ impl LinkEvent {
                 );
                 link_details
             }
-            Err(err) => return Err(anyhow!("Cannot get link state: {err}")),
+            Err(err) => bail!("Cannot get link state: {err}"),
         };
 
         Ok(Box::new(LinkEvent {
