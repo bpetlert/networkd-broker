@@ -175,8 +175,9 @@ impl Script {
             None => {
                 // script hasn't exited yet
                 script.kill()?;
+                let exit_code = script.wait()?;
                 Err(anyhow!(
-                    "Execute timeout {} {} {}, >= {secs} seconds",
+                    "Execute timeout {} {} {}, >= {secs} seconds, {exit_code}",
                     &self.path.to_str().unwrap(),
                     args[0],
                     args[1]
