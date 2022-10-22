@@ -5,8 +5,7 @@ use crate::{
     link::{LinkDetails, LinkEvent},
     script::{Script, ScriptArguments},
 };
-
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use futures_util::stream::StreamExt;
 use libsystemd::daemon::{self, NotifyState};
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
@@ -49,7 +48,7 @@ impl Broker {
     pub async fn listen(&mut self) -> Result<()> {
         debug!("Create filter proxy");
         let proxy = zbus::fdo::DBusProxy::new(&self.dbus_conn).await?;
-        proxy
+        if let Err(err) = proxy
             .add_match(
                 "\
                 type='signal',\
@@ -57,7 +56,10 @@ impl Broker {
                 member='PropertiesChanged',\
                 path_namespace='/org/freedesktop/network1/link'",
             )
-            .await?;
+            .await
+        {
+            bail!("Cannot crate filter proxy, {err}");
+        }
 
         debug!("Create message stream");
         let mut stream = MessageStream::from(&self.dbus_conn);
