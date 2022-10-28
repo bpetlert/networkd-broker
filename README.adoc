@@ -22,21 +22,17 @@ This also helps reduce memory footprint (~30MB &longrightarrow;
 It is available on AUR as https://aur.archlinux.org/packages/networkd-broker/[networkd-broker].
 To build and install arch package from GIT source:
 
-[source,shell]
-----
+[source,console]
 $ git clone https://github.com/bpetlert/networkd-broker.git
 $ cd networkd-broker
 $ makepkg -p PKGBUILD.local
 $ pacman -U networkd-broker-xxxx-1-x86_64.pkg.tar
-----
 
 Then enable/start networkd-broker.service
 
-[source,shell]
-----
+[source,console]
 $ systemctl enable networkd-broker.service
 $ systemctl start networkd-broker.service
-----
 
 == Configuration
 
@@ -67,7 +63,7 @@ The default execution timeout of each script is 20 seconds.
 It can be overridden by `--timeout` option in service configuration.
 Any of the scripts which end with '-nowait' is run immediately, without waitting for the termination of previous scripts.
 
-[source]
+[source,console]
 ----
 /etc/networkd
 └── broker.d
@@ -138,7 +134,7 @@ fi
 ----
 
 ./etc/networkd
-[source]
+[source,console]
 ----
 /etc/networkd
 └── broker.d
