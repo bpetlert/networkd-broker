@@ -1,3 +1,4 @@
+use crate::{args::Arguments, broker::Broker};
 use anyhow::{bail, Context, Result};
 use async_std::task;
 use clap::Parser;
@@ -15,8 +16,6 @@ mod environment;
 mod launcher;
 mod link;
 mod script;
-
-use crate::{args::Arguments, broker::Broker};
 
 fn init_log() -> Result<()> {
     let filter = match EnvFilter::try_from_env("RUST_LOG") {

@@ -1,8 +1,7 @@
+use crate::link::LinkEvent;
 use anyhow::Result;
 use std::collections::HashMap;
 use strum::{Display, EnumString};
-
-use crate::link::LinkEvent;
 
 #[derive(Debug, PartialEq, Eq, EnumString, Display)]
 pub enum ScriptEnvironment {
