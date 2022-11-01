@@ -21,7 +21,7 @@ use crate::{args::Arguments, broker::Broker};
 fn init_log() -> Result<()> {
     let filter = match EnvFilter::try_from_env("RUST_LOG") {
         Ok(f) => f,
-        Err(_) => EnvFilter::try_new("networkd_broker=warn")?,
+        Err(_) => EnvFilter::try_new("networkd_broker=info")?,
     };
     if let Err(err) = tracing_subscriber::fmt()
         .with_env_filter(filter)
