@@ -1,5 +1,5 @@
 use crate::{args::Arguments, broker::Broker};
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use async_std::task;
 use clap::Parser;
 use mimalloc::MiMalloc;
@@ -17,11 +17,9 @@ mod launcher;
 mod link;
 mod script;
 
-fn init_log() -> Result<()> {
-    let filter = match EnvFilter::try_from_env("RUST_LOG") {
-        Ok(f) => f,
-        Err(_) => EnvFilter::try_new("networkd_broker=info")?,
-    };
+fn main() -> Result<()> {
+    let filter =
+        EnvFilter::try_from_default_env().unwrap_or(EnvFilter::try_new("networkd_broker=info")?);
     if let Err(err) = tracing_subscriber::fmt()
         .with_env_filter(filter)
         .without_time()
@@ -30,15 +28,10 @@ fn init_log() -> Result<()> {
         bail!("Failed to initialize tracing subscriber: {err}");
     }
 
-    Ok(())
-}
+    let arguments = Arguments::parse();
+    debug!("Run with {:?}", arguments);
 
-fn main() -> Result<()> {
     task::block_on(async {
-        let arguments = Arguments::parse();
-        init_log().context("Failed to initialize logging")?;
-        debug!("Run with {:?}", arguments);
-
         let mut broker = Broker::new(arguments.script_dir, arguments.timeout).await?;
 
         if arguments.run_startup_triggers {
