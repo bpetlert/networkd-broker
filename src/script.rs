@@ -65,7 +65,7 @@ impl Script {
         if self.no_wait {
             match self.execute_nowait() {
                 Ok(_) => {
-                    info!("Executed (nowait) {}", self.path.to_str().unwrap());
+                    info!("Executed (nowait) {}", self.path.display());
                 }
                 Err(err) => {
                     warn!("{err}");
@@ -74,7 +74,7 @@ impl Script {
         } else {
             match self.execute_wait(self.timeout) {
                 Ok(_) => {
-                    info!("Executed {}", self.path.to_str().unwrap());
+                    info!("Executed {}", self.path.display());
                 }
                 Err(err) => {
                     warn!("{err}");
@@ -99,29 +99,39 @@ impl Script {
 
         info!(
             "Try to execute (nowait) {} {} {}",
-            &self.path.to_str().unwrap(),
+            &self.path.display(),
             args[0],
             args[1]
         );
         match Command::new(&self.path).args(&args).envs(envs).spawn() {
             Ok(mut script) => {
                 // Prevent zombie process by spawning thread to wait for the process to finish
-                let script_path = self.path.to_str().unwrap().to_owned();
+                let script_path = self.path.clone();
                 let arg0 = args[0].clone();
                 let arg1 = args[1].clone();
                 std::thread::spawn(move || match script.wait() {
                     Ok(exit_code) => {
-                        info!("Finished {script_path} {} {}, {exit_code}", arg0, arg1);
+                        info!(
+                            "Finished {} {} {}, {exit_code}",
+                            script_path.display(),
+                            arg0,
+                            arg1
+                        );
                     }
                     Err(err) => {
-                        warn!("{script_path} {} {} wasn't running, {err}", arg0, arg1);
+                        warn!(
+                            "{} {} {} wasn't running, {err}",
+                            script_path.display(),
+                            arg0,
+                            arg1
+                        );
                     }
                 });
                 Ok(())
             }
             Err(err) => Err(anyhow!(
                 "Execute {} {} {} failed, {}",
-                &self.path.to_str().unwrap(),
+                &self.path.display(),
                 args[0],
                 args[1],
                 err
@@ -145,7 +155,7 @@ impl Script {
 
         info!(
             "Try to execute {} {} {}",
-            &self.path.to_str().unwrap(),
+            &self.path.display(),
             args[0],
             args[1]
         );
@@ -154,7 +164,7 @@ impl Script {
             Err(err) => {
                 bail!(
                     "Execute {} {} {} failed, {}",
-                    &self.path.to_str().unwrap(),
+                    &self.path.display(),
                     args[0],
                     args[1],
                     err
@@ -166,7 +176,7 @@ impl Script {
             Some(exit_code) => {
                 info!(
                     "Finished {} {} {}, {exit_code}",
-                    &self.path.to_str().unwrap(),
+                    &self.path.display(),
                     args[0],
                     args[1]
                 );
@@ -178,7 +188,7 @@ impl Script {
                 let exit_code = script.wait()?;
                 Err(anyhow!(
                     "Execute timeout {} {} {}, >= {secs} seconds, {exit_code}",
-                    &self.path.to_str().unwrap(),
+                    &self.path.display(),
                     args[0],
                     args[1]
                 ))
@@ -194,7 +204,7 @@ impl Script {
 
         // Path exists?
         if !path.exists() {
-            bail!("{} does not exist", path.to_str().unwrap());
+            bail!("{} does not exist", path.display());
         }
 
         let uid = uid.unwrap_or(0);
@@ -226,7 +236,7 @@ impl Script {
         }
 
         if scripts.is_empty() {
-            bail!("No script in {}.", path.to_str().unwrap());
+            bail!("No script in {}.", path.display());
         }
 
         Ok(scripts)
