@@ -267,8 +267,8 @@ mod tests {
         .iter()
         {
             let state_dir = &broker_root.join(path);
-            DirBuilder::new().create(&state_dir).unwrap();
-            assert!(fs::metadata(&state_dir).unwrap().is_dir());
+            DirBuilder::new().create(state_dir).unwrap();
+            assert!(fs::metadata(state_dir).unwrap().is_dir());
         }
 
         // Create dummy scripts for current uid/gid
