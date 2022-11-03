@@ -31,11 +31,8 @@ impl Environments {
         &self.envs
     }
 
-    pub fn add<V>(&mut self, name: ScriptEnvironment, value: V) -> &mut Environments
-    where
-        V: Into<String>,
-    {
-        self.envs.insert(name.to_string(), value.into());
+    pub fn add(&mut self, name: ScriptEnvironment, value: String) -> &mut Environments {
+        self.envs.insert(name.to_string(), value);
         self
     }
 
@@ -55,8 +52,8 @@ mod tests {
     #[test]
     fn create_script_env() {
         let mut envs = Environments::new();
-        envs.add(ScriptEnvironment::DeviceIface, "wlp3s0")
-            .add(ScriptEnvironment::BrokerAction, "routable");
+        envs.add(ScriptEnvironment::DeviceIface, "wlp3s0".to_string())
+            .add(ScriptEnvironment::BrokerAction, "routable".to_string());
 
         let pack = envs.pack();
         assert_eq!(pack.len(), 2);

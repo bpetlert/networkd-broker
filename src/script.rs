@@ -1,11 +1,7 @@
 use crate::environment::Environments;
 use anyhow::{anyhow, bail, Result};
 use std::{
-    collections::HashMap,
-    os::unix::fs::MetadataExt,
-    path::{Path, PathBuf},
-    process::Command,
-    sync::Arc,
+    collections::HashMap, os::unix::fs::MetadataExt, path::PathBuf, process::Command, sync::Arc,
     time::Duration,
 };
 use tracing::{info, warn};
@@ -41,11 +37,7 @@ pub struct Script {
 }
 
 impl Script {
-    pub fn new<P>(path: P) -> Script
-    where
-        P: Into<PathBuf>,
-    {
-        let path = path.into();
+    pub fn new(path: PathBuf) -> Script {
         let mut no_wait = false;
         let file_name = path.file_name().unwrap().to_str().unwrap();
         if file_name.ends_with("-nowait") {
@@ -196,12 +188,11 @@ impl Script {
         }
     }
 
-    pub fn get_scripts_in<P>(path: P, uid: Option<u32>, gid: Option<u32>) -> Result<Vec<Script>>
-    where
-        P: AsRef<Path>,
-    {
-        let path = path.as_ref();
-
+    pub fn get_scripts_in(
+        path: PathBuf,
+        uid: Option<u32>,
+        gid: Option<u32>,
+    ) -> Result<Vec<Script>> {
         // Path exists?
         if !path.exists() {
             bail!("{} does not exist", path.display());
@@ -232,7 +223,7 @@ impl Script {
                 continue;
             }
 
-            scripts.push(Script::new(entry.path()));
+            scripts.push(Script::new(entry.path().to_path_buf()));
         }
 
         if scripts.is_empty() {
@@ -335,11 +326,13 @@ mod tests {
     #[test]
     fn test_script_new() {
         // Normal script
-        let script = Script::new("/etc/networkd/broker.d/carrier.d/00-script");
+        let script = Script::new(PathBuf::from("/etc/networkd/broker.d/carrier.d/00-script"));
         assert!(!script.no_wait);
 
         // No-wait script
-        let script = Script::new("/etc/networkd/broker.d/carrier.d/00-script-nowait");
+        let script = Script::new(PathBuf::from(
+            "/etc/networkd/broker.d/carrier.d/00-script-nowait",
+        ));
         assert!(script.no_wait);
     }
 
@@ -355,7 +348,7 @@ mod tests {
         // 05-executable-nowait
         // 10-executable
         let carrier_d = broker_root.join("carrier.d");
-        let scripts = Script::get_scripts_in(&carrier_d, Some(uid), Some(gid)).unwrap();
+        let scripts = Script::get_scripts_in(carrier_d, Some(uid), Some(gid)).unwrap();
         assert_eq!(scripts.len(), 3);
         assert_eq!(
             scripts[0].path.file_name(),
@@ -372,17 +365,17 @@ mod tests {
 
         // No script for configuring state
         let configuring_d = broker_root.join("configuring.d");
-        let result = Script::get_scripts_in(&configuring_d, Some(uid), Some(gid));
+        let result = Script::get_scripts_in(configuring_d, Some(uid), Some(gid));
         assert!(result.is_err());
 
         // No script for root in degraded.d
         let degraded_d = broker_root.join("degraded.d");
-        let result = Script::get_scripts_in(&degraded_d, None, None);
+        let result = Script::get_scripts_in(degraded_d, None, None);
         assert!(result.is_err());
 
         // No directory for routable state
         let routable_d = broker_root.join("routable.d");
-        let result = Script::get_scripts_in(&routable_d, Some(uid), Some(gid));
+        let result = Script::get_scripts_in(routable_d, Some(uid), Some(gid));
         assert!(result.is_err());
     }
 
@@ -399,57 +392,57 @@ mod tests {
         let mut envs = Environments::new();
         envs.add(ScriptEnvironment::DeviceIface, iface)
             .add(ScriptEnvironment::BrokerAction, state)
-            .add(ScriptEnvironment::Json, "");
+            .add(ScriptEnvironment::Json, "".to_string());
         let shared_envs = Arc::new(envs);
 
         // Should pass, wait
-        let mut script = Script::new(concat!(
+        let mut script = Script::new(PathBuf::from(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
             "/script-execute-test.sh"
-        ));
+        )));
         script.args = Some(shared_args.clone());
         script.envs = Some(shared_envs.clone());
         assert!(script.execute().is_ok(), "Should pass (wait)");
 
         // Should pass, no wait
-        let mut script = Script::new(concat!(
+        let mut script = Script::new(PathBuf::from(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
             "/script-execute-test-nowait.sh"
-        ));
+        )));
         script.args = Some(shared_args.clone());
         script.envs = Some(shared_envs.clone());
         assert!(script.execute().is_ok(), "Should pass (nowait)");
 
         // no-such-file should not cause panic, wait
-        let mut script = Script::new(concat!(
+        let mut script = Script::new(PathBuf::from(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
             "/no-such-file"
-        ));
+        )));
         script.args = Some(shared_args.clone());
         script.envs = Some(shared_envs.clone());
         let ret = script.execute();
         assert!(ret.is_ok(), "no-such-file should not cause panic (wait)");
 
         // no-such-file should not cause panic, nowait
-        let mut script = Script::new(concat!(
+        let mut script = Script::new(PathBuf::from(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
             "/no-such-file-nowait"
-        ));
+        )));
         script.args = Some(shared_args.clone());
         script.envs = Some(shared_envs.clone());
         let ret = script.execute();
         assert!(ret.is_ok(), "no-such-file should not cause panic (nowait)");
 
         // Script failure should not cause panic, wait
-        let mut script = Script::new(concat!(
+        let mut script = Script::new(PathBuf::from(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
             "/script-execute-test.sh"
-        ));
+        )));
         script.args = Some(shared_args.clone());
         script.envs = Some(shared_envs.clone());
         std::env::set_var("SCRIPT_FAILURE", "1");
@@ -459,11 +452,11 @@ mod tests {
         );
 
         // Script failure should not cause panic, nowait
-        let mut script = Script::new(concat!(
+        let mut script = Script::new(PathBuf::from(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
             "/script-execute-test-nowait.sh"
-        ));
+        )));
         script.args = Some(shared_args);
         script.envs = Some(shared_envs);
         std::env::set_var("SCRIPT_FAILURE", "1");

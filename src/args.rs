@@ -1,4 +1,5 @@
 use clap::Parser;
+use std::path::PathBuf;
 
 #[derive(PartialEq, Eq, Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -9,7 +10,7 @@ pub struct Arguments {
         long = "script-dir",
         default_value = "/etc/networkd/broker.d"
     )]
-    pub script_dir: String,
+    pub script_dir: PathBuf,
 
     /// Generate events reflecting preexisting state and behavior on startup
     #[arg(short = 'T', long = "run-startup-triggers")]
@@ -33,7 +34,7 @@ mod tests {
             &Arguments::command().get_matches_from(vec![env!("CARGO_CRATE_NAME")]),
         )
         .expect("Paring argument");
-        assert_eq!(args.script_dir, "/etc/networkd/broker.d".to_owned());
+        assert_eq!(args.script_dir, PathBuf::from("/etc/networkd/broker.d"));
         assert!(!args.run_startup_triggers);
         assert_eq!(args.timeout, 20);
 
@@ -47,7 +48,7 @@ mod tests {
             "50",
         ]))
         .expect("Paring argument");
-        assert_eq!(args.script_dir, "/etc/networkd/broker2.d".to_owned());
+        assert_eq!(args.script_dir, PathBuf::from("/etc/networkd/broker2.d"));
         assert!(args.run_startup_triggers);
         assert_eq!(args.timeout, 50);
 
@@ -61,7 +62,7 @@ mod tests {
             "50",
         ]))
         .expect("Paring argument");
-        assert_eq!(args.script_dir, "/etc/networkd/broker2.d".to_owned());
+        assert_eq!(args.script_dir, PathBuf::from("/etc/networkd/broker2.d"));
         assert!(args.run_startup_triggers);
         assert_eq!(args.timeout, 50);
     }

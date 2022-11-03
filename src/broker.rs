@@ -23,10 +23,7 @@ pub struct Broker {
 }
 
 impl Broker {
-    pub async fn new<P>(script_dir: P, timeout: u64) -> Result<Broker>
-    where
-        P: Into<PathBuf>,
-    {
+    pub async fn new(script_dir: PathBuf, timeout: u64) -> Result<Broker> {
         debug!("Start script launcher");
         let launcher = Launcher::new();
 
@@ -37,7 +34,7 @@ impl Broker {
         let link_state_cache = Broker::init_link_state_cache(&dbus_conn).await?;
 
         Ok(Broker {
-            script_dir: script_dir.into(),
+            script_dir,
             timeout,
             launcher,
             dbus_conn,
@@ -160,7 +157,7 @@ impl Broker {
         // Get all scripts associated with current event
         let state_dir = format!("{}.d", event.state);
         let script_path = self.script_dir.join(state_dir);
-        let scripts = match Script::get_scripts_in(&script_path, None, None) {
+        let scripts = match Script::get_scripts_in(script_path, None, None) {
             Ok(s) => s,
             Err(err) => bail!("{err}"),
         };
