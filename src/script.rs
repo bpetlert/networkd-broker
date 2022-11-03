@@ -38,11 +38,9 @@ pub struct Script {
 
 impl Script {
     pub fn new(path: PathBuf) -> Script {
-        let mut no_wait = false;
-        let file_name = path.file_name().unwrap().to_str().unwrap();
-        if file_name.ends_with("-nowait") {
-            no_wait = true;
-        }
+        let no_wait = path
+            .file_name()
+            .map_or(false, |f| f.to_str().unwrap().ends_with("-nowait"));
 
         Script {
             path,
