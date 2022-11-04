@@ -1,9 +1,8 @@
 use crate::{
     dbus_interface::NetworkManagerProxy,
-    environment::Environments,
     launcher::Launcher,
     link::{LinkDetails, LinkEvent},
-    script::{Script, ScriptArguments},
+    script::{EnvVar, ScriptBuilder},
 };
 use anyhow::{bail, Context, Result};
 use futures_util::stream::StreamExt;
@@ -15,15 +14,15 @@ use zbus::{Connection, Message, MessageStream};
 /// A responder manages link event
 #[derive(Debug)]
 pub struct Broker {
-    script_dir: PathBuf,
-    timeout: u64,
+    script_root_dir: PathBuf,
+    script_timeout: u64,
     launcher: Launcher,
     dbus_conn: Connection,
     link_state_cache: BTreeMap<String, String>,
 }
 
 impl Broker {
-    pub async fn new(script_dir: PathBuf, timeout: u64) -> Result<Broker> {
+    pub async fn new(script_root_dir: PathBuf, script_timeout: u64) -> Result<Broker> {
         debug!("Start script launcher");
         let launcher = Launcher::new();
 
@@ -34,8 +33,8 @@ impl Broker {
         let link_state_cache = Broker::init_link_state_cache(&dbus_conn).await?;
 
         Ok(Broker {
-            script_dir,
-            timeout,
+            script_root_dir,
+            script_timeout,
             launcher,
             dbus_conn,
             link_state_cache,
@@ -156,29 +155,23 @@ impl Broker {
 
         // Get all scripts associated with current event
         let state_dir = format!("{}.d", event.state);
-        let script_path = self.script_dir.join(state_dir);
-        let scripts = match Script::get_scripts_in(script_path, None, None) {
+        let script_path = self.script_root_dir.join(state_dir);
+        let scripts = match ScriptBuilder::build_from(script_path, None, None) {
             Ok(s) => s,
             Err(err) => bail!("{err}"),
         };
 
-        // Build script's arguments
-        let mut args = ScriptArguments::new();
-        args.state = event.state.clone();
-        args.iface = event.iface.clone();
-        let shared_args = Arc::new(args);
-
-        // Pack all event-related environments.
-        let mut envs = Environments::new();
-        envs.pack_from(event)?;
-        let shared_envs = Arc::new(envs);
-
         // Push scripts with args + envs to launcher's queue.
-        for mut s in scripts {
-            s.args = Some(shared_args.clone());
-            s.envs = Some(shared_envs.clone());
-            s.timeout = self.timeout;
-            if let Err(err) = self.launcher.add(s) {
+        for script in scripts {
+            let script = script
+                .set_arg0(&event.state.clone())
+                .set_arg1(&event.iface.clone())
+                .add_env(EnvVar::DeviceIface, event.iface.clone())
+                .add_env(EnvVar::BrokerAction, event.state.clone())
+                .add_env(EnvVar::Json, event.link_details_json.clone())
+                .set_default_timeout(self.script_timeout)
+                .build();
+            if let Err(err) = self.launcher.add(script) {
                 warn!("{err}");
             }
         }

@@ -12,7 +12,6 @@ static GLOBAL: MiMalloc = MiMalloc;
 mod args;
 mod broker;
 mod dbus_interface;
-mod environment;
 mod launcher;
 mod link;
 mod script;

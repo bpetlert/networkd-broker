@@ -1,196 +1,99 @@
-use crate::environment::Environments;
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use std::{
-    collections::HashMap, os::unix::fs::MetadataExt, path::PathBuf, process::Command, sync::Arc,
+    collections::HashMap,
+    os::unix::fs::MetadataExt,
+    path::{Path, PathBuf},
+    process::Command,
+    thread,
     time::Duration,
 };
+use strum::{Display, EnumString};
 use tracing::{info, warn};
 use wait_timeout::ChildExt;
 use walkdir::WalkDir;
 
-#[derive(Debug)]
-pub struct ScriptArguments {
-    pub state: String,
-    pub iface: String,
-}
+pub const DEFAULT_TIMEOUT: u64 = 20; // seconds
 
-impl ScriptArguments {
-    pub fn new() -> ScriptArguments {
-        ScriptArguments {
-            state: String::new(),
-            iface: String::new(),
-        }
-    }
+#[derive(Debug, PartialEq, Eq, EnumString, Display)]
+pub enum EnvVar {
+    #[strum(serialize = "NWD_DEVICE_IFACE")]
+    DeviceIface,
 
-    pub fn pack(&self) -> Vec<&String> {
-        vec![&self.state, &self.iface]
-    }
+    #[strum(serialize = "NWD_BROKER_ACTION")]
+    BrokerAction,
+
+    #[strum(serialize = "NWD_JSON")]
+    Json,
 }
 
 #[derive(Debug)]
-pub struct Script {
+pub struct ScriptBuilder {
     path: PathBuf,
-    pub args: Option<Arc<ScriptArguments>>,
-    pub envs: Option<Arc<Environments>>,
-    no_wait: bool,
-    pub timeout: u64,
+
+    /// state
+    arg0: String,
+
+    /// iface
+    arg1: String,
+
+    envs: HashMap<String, String>,
+
+    default_timeout: u64,
 }
 
-impl Script {
-    pub fn new(path: PathBuf) -> Script {
-        let no_wait = path
-            .file_name()
-            .map_or(false, |f| f.to_str().unwrap().ends_with("-nowait"));
+impl ScriptBuilder {
+    pub fn set_path(mut self, path: &Path) -> Self {
+        self.path = path.to_path_buf();
+        self
+    }
+
+    pub fn set_arg0(mut self, state: &str) -> Self {
+        self.arg0 = state.to_string();
+        self
+    }
+
+    pub fn set_arg1(mut self, iface: &str) -> Self {
+        self.arg1 = iface.to_string();
+        self
+    }
+
+    pub fn add_env(mut self, name: EnvVar, value: String) -> Self {
+        self.envs.insert(name.to_string(), value);
+        self
+    }
+
+    pub fn set_default_timeout(mut self, timeout: u64) -> Self {
+        self.default_timeout = timeout;
+        self
+    }
+
+    pub fn build(self) -> Script {
+        let timeout = if self
+            .path
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .ends_with("-nowait")
+        {
+            None
+        } else {
+            Some(self.default_timeout)
+        };
 
         Script {
-            path,
-            args: None,
-            envs: None,
-            no_wait,
-            timeout: 20,
+            path: self.path,
+            args: vec![self.arg0, self.arg1],
+            envs: self.envs,
+            timeout,
         }
     }
 
-    pub fn execute(&self) -> Result<()> {
-        if self.no_wait {
-            match self.execute_nowait() {
-                Ok(_) => {
-                    info!("Executed (nowait) {}", self.path.display());
-                }
-                Err(err) => {
-                    warn!("{err}");
-                }
-            }
-        } else {
-            match self.execute_wait(self.timeout) {
-                Ok(_) => {
-                    info!("Executed {}", self.path.display());
-                }
-                Err(err) => {
-                    warn!("{err}");
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn execute_nowait(&self) -> Result<()> {
-        let args: Vec<&String> = match &self.args {
-            Some(a) => a.pack(),
-            None => Vec::new(),
-        };
-
-        let empty_envs: HashMap<String, String> = HashMap::new();
-        let envs: &HashMap<String, String> = match &self.envs {
-            Some(e) => e.pack(),
-            None => &empty_envs,
-        };
-
-        info!(
-            "Try to execute (nowait) {} {} {}",
-            &self.path.display(),
-            args[0],
-            args[1]
-        );
-        match Command::new(&self.path).args(&args).envs(envs).spawn() {
-            Ok(mut script) => {
-                // Prevent zombie process by spawning thread to wait for the process to finish
-                let script_path = self.path.clone();
-                let arg0 = args[0].clone();
-                let arg1 = args[1].clone();
-                std::thread::spawn(move || match script.wait() {
-                    Ok(exit_code) => {
-                        info!(
-                            "Finished {} {} {}, {exit_code}",
-                            script_path.display(),
-                            arg0,
-                            arg1
-                        );
-                    }
-                    Err(err) => {
-                        warn!(
-                            "{} {} {} wasn't running, {err}",
-                            script_path.display(),
-                            arg0,
-                            arg1
-                        );
-                    }
-                });
-                Ok(())
-            }
-            Err(err) => Err(anyhow!(
-                "Execute {} {} {} failed, {}",
-                &self.path.display(),
-                args[0],
-                args[1],
-                err
-            )),
-        }
-    }
-
-    pub fn execute_wait(&self, secs: u64) -> Result<()> {
-        let args: Vec<&String> = match &self.args {
-            Some(a) => a.pack(),
-            None => Vec::new(),
-        };
-
-        let empty_envs: HashMap<String, String> = HashMap::new();
-        let envs: &HashMap<String, String> = match &self.envs {
-            Some(e) => e.pack(),
-            None => &empty_envs,
-        };
-
-        let timeout = Duration::from_secs(secs);
-
-        info!(
-            "Try to execute {} {} {}",
-            &self.path.display(),
-            args[0],
-            args[1]
-        );
-        let mut script = match Command::new(&self.path).args(&args).envs(envs).spawn() {
-            Ok(script) => script,
-            Err(err) => {
-                bail!(
-                    "Execute {} {} {} failed, {}",
-                    &self.path.display(),
-                    args[0],
-                    args[1],
-                    err
-                );
-            }
-        };
-
-        match script.wait_timeout(timeout)? {
-            Some(exit_code) => {
-                info!(
-                    "Finished {} {} {}, {exit_code}",
-                    &self.path.display(),
-                    args[0],
-                    args[1]
-                );
-                Ok(())
-            }
-            None => {
-                // script hasn't exited yet
-                script.kill()?;
-                let exit_code = script.wait()?;
-                Err(anyhow!(
-                    "Execute timeout {} {} {}, >= {secs} seconds, {exit_code}",
-                    &self.path.display(),
-                    args[0],
-                    args[1]
-                ))
-            }
-        }
-    }
-
-    pub fn get_scripts_in(
+    pub fn build_from(
         path: PathBuf,
         uid: Option<u32>,
         gid: Option<u32>,
-    ) -> Result<Vec<Script>> {
+    ) -> Result<Vec<ScriptBuilder>> {
         // Path exists?
         if !path.exists() {
             bail!("{} does not exist", path.display());
@@ -198,7 +101,8 @@ impl Script {
 
         let uid = uid.unwrap_or(0);
         let gid = gid.unwrap_or(0);
-        let mut scripts: Vec<Script> = Vec::new();
+        let mut scripts: Vec<ScriptBuilder> = Vec::new();
+
         for entry in WalkDir::new(&path)
             .min_depth(1)
             .max_depth(1)
@@ -221,7 +125,7 @@ impl Script {
                 continue;
             }
 
-            scripts.push(Script::new(entry.path().to_path_buf()));
+            scripts.push(Script::builder().set_path(entry.path()));
         }
 
         if scripts.is_empty() {
@@ -232,18 +136,709 @@ impl Script {
     }
 }
 
+#[derive(Debug)]
+pub struct Script {
+    path: PathBuf,
+    args: Vec<String>,
+    envs: HashMap<String, String>,
+    timeout: Option<u64>,
+}
+
+impl Script {
+    pub fn builder() -> ScriptBuilder {
+        ScriptBuilder {
+            path: PathBuf::new(),
+            arg0: String::new(),
+            arg1: String::new(),
+            envs: HashMap::new(),
+            default_timeout: DEFAULT_TIMEOUT,
+        }
+    }
+
+    pub fn execute(self) -> Result<()> {
+        let mut process = match Command::new(&self.path)
+            .args(self.args.clone())
+            .envs(self.envs)
+            .spawn()
+        {
+            Ok(process) => {
+                info!(
+                    "Execute {script} {arg0} {arg1}",
+                    script = &self.path.display(),
+                    arg0 = self.args[0],
+                    arg1 = self.args[1]
+                );
+                process
+            }
+            Err(err) => bail!(
+                "Failed to execute {script} {arg0} {arg1}, {err}",
+                script = &self.path.display(),
+                arg0 = self.args[0],
+                arg1 = self.args[1]
+            ),
+        };
+
+        if let Some(timeout) = self.timeout {
+            // Wait until child process to finish or timeout
+            match process.wait_timeout(Duration::from_secs(timeout))? {
+                Some(exit_code) => {
+                    info!(
+                        "Finished executing {script} {arg0} {arg1}, {exit_code}",
+                        script = &self.path.display(),
+                        arg0 = self.args[0],
+                        arg1 = self.args[1]
+                    );
+                    return Ok(());
+                }
+                None => {
+                    process.kill()?;
+                    let exit_code = process.wait()?;
+                    bail!(
+                        "Execute timeout {script} {arg0} {arg1}, >= {timeout} seconds, {exit_code}",
+                        script = &self.path.display(),
+                        arg0 = self.args[0],
+                        arg1 = self.args[1]
+                    );
+                }
+            }
+        } else {
+            // Use thread to wait for child process' return code.
+            thread::spawn(move || match process.wait() {
+                Ok(exit_code) => info!(
+                    "Finished executing {script} {arg0} {arg1}, {exit_code}",
+                    script = &self.path.display(),
+                    arg0 = self.args[0],
+                    arg1 = self.args[1]
+                ),
+                Err(err) => warn!(
+                    "{script} {arg0} {arg1} wasn't running, {err}",
+                    script = &self.path.display(),
+                    arg0 = self.args[0],
+                    arg1 = self.args[1]
+                ),
+            });
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::environment::ScriptEnvironment;
-
     use super::*;
-    use std::ffi::OsStr;
-    use std::fs::{self, DirBuilder};
-    use std::os::unix::fs::OpenOptionsExt;
-    use tempfile::TempDir;
+    use std::{
+        ffi::OsStr,
+        fs::{self, DirBuilder, File},
+        io::{BufRead, BufReader, Seek},
+        os::unix::fs::OpenOptionsExt,
+    };
+    use tempfile::{NamedTempFile, TempDir};
+    use tracing_subscriber::EnvFilter;
     use users::{get_current_gid, get_current_uid};
 
-    fn setup_get_scripts_in() -> tempfile::TempDir {
+    #[test]
+    fn build_new_script() {
+        // Script without extension
+        let script = Script::builder()
+            .set_path(Path::new("/etc/networkd/broker.d/carrier.d/00-script"))
+            .build();
+        assert_eq!(script.timeout, Some(DEFAULT_TIMEOUT));
+
+        // Script with extension
+        let script = Script::builder()
+            .set_path(Path::new("/etc/networkd/broker.d/carrier.d/00-script.sh"))
+            .build();
+        assert_eq!(script.timeout, Some(DEFAULT_TIMEOUT));
+
+        // No-wait script without extension
+        let script = Script::builder()
+            .set_path(Path::new(
+                "/etc/networkd/broker.d/carrier.d/00-script-nowait",
+            ))
+            .build();
+        assert_eq!(script.timeout, None);
+
+        // No-wait script with extension
+        let script = Script::builder()
+            .set_path(Path::new(
+                "/etc/networkd/broker.d/carrier.d/00-script-nowait.sh",
+            ))
+            .build();
+        assert_eq!(script.timeout, None);
+    }
+
+    #[test]
+    fn build_new_script_from_dir() {
+        let temp_dir = setup_script_dir();
+        let broker_root = temp_dir.path().join("etc/networkd/broker.d");
+        let uid = get_current_uid();
+        let gid = get_current_gid();
+
+        // 3 scripts of current uid/gid for carrier state
+        // 00-executable
+        // 05-executable-nowait
+        // 10-executable
+        let carrier_d = broker_root.join("carrier.d");
+        let scripts = ScriptBuilder::build_from(carrier_d, Some(uid), Some(gid)).unwrap();
+        assert_eq!(scripts.len(), 3);
+        assert_eq!(
+            scripts[0].path.file_name(),
+            Some(OsStr::new("00-executable"))
+        );
+        assert_eq!(
+            scripts[1].path.file_name(),
+            Some(OsStr::new("05-executable-nowait"))
+        );
+        assert_eq!(
+            scripts[2].path.file_name(),
+            Some(OsStr::new("10-executable"))
+        );
+
+        // No script for configuring state
+        let configuring_d = broker_root.join("configuring.d");
+        let result = ScriptBuilder::build_from(configuring_d, Some(uid), Some(gid));
+        assert!(result.is_err());
+
+        // No script for root in degraded.d
+        let degraded_d = broker_root.join("degraded.d");
+        let result = ScriptBuilder::build_from(degraded_d, None, None);
+        assert!(result.is_err());
+
+        // No directory for routable state
+        let routable_d = broker_root.join("routable.d");
+        let result = ScriptBuilder::build_from(routable_d, Some(uid), Some(gid));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    /// Script execution failure should not cause program to panic.
+    ///
+    /// Use log entries to verify script execution.
+    fn execute_script() {
+        let log_file = setup_log();
+        execute_script_with_timeout(log_file.reopen().unwrap());
+        execute_script_without_timeout(log_file.reopen().unwrap());
+    }
+
+    fn execute_script_with_timeout(mut log_file: File) {
+        log_file.seek(std::io::SeekFrom::End(0)).unwrap();
+        let mut reader = BufReader::new(log_file);
+
+        const STATE: &str = "routable";
+        const IFACE: &str = "wlp3s0";
+
+        fn next_log(reader: &mut BufReader<File>) -> String {
+            let mut line = String::new();
+            reader.read_line(&mut line).unwrap();
+            line
+        }
+
+        // Wrong argument 1
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0("wrong-arg0")
+            .set_arg1(IFACE)
+            .build();
+        let ret = script.execute();
+        assert!(ret.is_ok(), "Wrong argument 1");
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} wrong-arg0 {IFACE}\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} wrong-arg0 {IFACE}, exit status: 52\n",
+                script_path.display()
+            )
+        );
+
+        // Wrong argument 2
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1("wrong-arg1")
+            .build();
+        let ret = script.execute();
+        assert!(ret.is_ok(), "Wrong argument 2");
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} {STATE} wrong-arg1\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} {STATE} wrong-arg1, exit status: 53\n",
+                script_path.display()
+            )
+        );
+
+        // Missing NWD_DEVICE_IFACE environment variable
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .build();
+        let ret = script.execute();
+        assert!(ret.is_ok(), "Missing NWD_DEVICE_IFACE environment variable");
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} {STATE} {IFACE}\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} {STATE} {IFACE}, exit status: 54\n",
+                script_path.display()
+            )
+        );
+
+        // Missing NWD_BROKER_ACTION environment variable
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .build();
+        let ret = script.execute();
+        assert!(
+            ret.is_ok(),
+            "Missing NWD_BROKER_ACTION environment variable"
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} {STATE} {IFACE}\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} {STATE} {IFACE}, exit status: 55\n",
+                script_path.display()
+            )
+        );
+
+        // Missing NWD_JSON environment variable
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .add_env(EnvVar::BrokerAction, STATE.to_string())
+            .build();
+        let ret = script.execute();
+        assert!(ret.is_ok(), "Missing NWD_JSON environment variable");
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} {STATE} {IFACE}\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} {STATE} {IFACE}, exit status: 56\n",
+                script_path.display()
+            )
+        );
+
+        // SCRIPT_FAILURE
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .add_env(EnvVar::BrokerAction, STATE.to_string())
+            .add_env(EnvVar::Json, "".to_string())
+            .build();
+        std::env::set_var("SCRIPT_FAILURE", "1");
+        let ret = script.execute();
+        assert!(ret.is_ok(), "SCRIPT_FAILURE");
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} {STATE} {IFACE}\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} {STATE} {IFACE}, exit status: 2\n",
+                script_path.display()
+            )
+        );
+
+        // Script is not exist.
+        let script_path = Path::new("/tmp/not-exist-script.sh");
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .add_env(EnvVar::BrokerAction, STATE.to_string())
+            .add_env(EnvVar::Json, "".to_string())
+            .build();
+        let ret = script.execute();
+        assert!(ret.is_err(), "Script is not exist");
+        warn!("{}", ret.unwrap_err());
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " WARN networkd_broker::script::tests: Failed to execute {} routable wlp3s0, No such file or directory (os error 2)\n",
+                script_path.display()
+            )
+        );
+
+        // Script execution timeout.
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .add_env(EnvVar::BrokerAction, STATE.to_string())
+            .add_env(EnvVar::Json, "".to_string())
+            .set_default_timeout(2)
+            .build();
+        std::env::set_var("SCRIPT_FAILURE", "2");
+        let ret = script.execute();
+        assert!(ret.is_err(), "Script execution timeout");
+        warn!("{}", ret.unwrap_err());
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} routable wlp3s0\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " WARN networkd_broker::script::tests: Execute timeout {} routable wlp3s0, >= 2 seconds, signal: 9 (SIGKILL)\n",
+                script_path.display()
+            )
+        );
+    }
+
+    fn execute_script_without_timeout(mut log_file: File) {
+        log_file.seek(std::io::SeekFrom::End(0)).unwrap();
+        let mut reader = BufReader::new(log_file);
+
+        const STATE: &str = "routable";
+        const IFACE: &str = "wlp3s0";
+
+        fn next_log(reader: &mut BufReader<File>) -> String {
+            let mut line = String::new();
+            reader.read_line(&mut line).unwrap();
+            line
+        }
+
+        fn wait_for_thread() {
+            thread::sleep(std::time::Duration::from_secs(2));
+        }
+
+        println!("{}", next_log(&mut reader));
+        println!("{}", next_log(&mut reader));
+        println!("{}", next_log(&mut reader));
+
+        // Wrong argument 1
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test-nowait.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0("wrong-arg0")
+            .set_arg1(IFACE)
+            .build();
+        let ret = script.execute();
+        assert!(ret.is_ok(), "Wrong argument 1");
+        wait_for_thread();
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} wrong-arg0 {IFACE}\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} wrong-arg0 {IFACE}, exit status: 52\n",
+                script_path.display()
+            )
+        );
+
+        // Wrong argument 2
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test-nowait.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1("wrong-arg1")
+            .build();
+        let ret = script.execute();
+        assert!(ret.is_ok(), "Wrong argument 2");
+        wait_for_thread();
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} {STATE} wrong-arg1\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} {STATE} wrong-arg1, exit status: 53\n",
+                script_path.display()
+            )
+        );
+
+        // Missing NWD_DEVICE_IFACE environment variable
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test-nowait.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .build();
+        let ret = script.execute();
+        wait_for_thread();
+        assert!(ret.is_ok(), "Missing NWD_DEVICE_IFACE environment variable");
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} {STATE} {IFACE}\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} {STATE} {IFACE}, exit status: 54\n",
+                script_path.display()
+            )
+        );
+
+        // Missing NWD_BROKER_ACTION environment variable
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test-nowait.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .build();
+        let ret = script.execute();
+        wait_for_thread();
+        assert!(
+            ret.is_ok(),
+            "Missing NWD_BROKER_ACTION environment variable"
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} {STATE} {IFACE}\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} {STATE} {IFACE}, exit status: 55\n",
+                script_path.display()
+            )
+        );
+
+        // Missing NWD_JSON environment variable
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test-nowait.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .add_env(EnvVar::BrokerAction, STATE.to_string())
+            .build();
+        let ret = script.execute();
+        wait_for_thread();
+        assert!(ret.is_ok(), "Missing NWD_JSON environment variable");
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} {STATE} {IFACE}\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} {STATE} {IFACE}, exit status: 56\n",
+                script_path.display()
+            )
+        );
+
+        // SCRIPT_FAILURE
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test-nowait.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .add_env(EnvVar::BrokerAction, STATE.to_string())
+            .add_env(EnvVar::Json, "".to_string())
+            .build();
+        std::env::set_var("SCRIPT_FAILURE", "1");
+        let ret = script.execute();
+        wait_for_thread();
+        assert!(ret.is_ok(), "SCRIPT_FAILURE");
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} {STATE} {IFACE}\n",
+                script_path.display()
+            )
+        );
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} {STATE} {IFACE}, exit status: 2\n",
+                script_path.display()
+            )
+        );
+
+        // Script is not exist.
+        let script_path = Path::new("/tmp/not-exist-script-nowait.sh");
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .add_env(EnvVar::BrokerAction, STATE.to_string())
+            .add_env(EnvVar::Json, "".to_string())
+            .build();
+        let ret = script.execute();
+        assert!(ret.is_err(), "Script is not exist");
+        warn!("{}", ret.unwrap_err());
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " WARN networkd_broker::script::tests: Failed to execute {} routable wlp3s0, No such file or directory (os error 2)\n",
+                script_path.display()
+            )
+        );
+
+        // Script execution nowait.
+        let script_path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests",
+            "/script-execute-test-nowait.sh"
+        ));
+        let script = Script::builder()
+            .set_path(script_path)
+            .set_arg0(STATE)
+            .set_arg1(IFACE)
+            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .add_env(EnvVar::BrokerAction, STATE.to_string())
+            .add_env(EnvVar::Json, "".to_string())
+            .build();
+        std::env::set_var("SCRIPT_FAILURE", "3");
+        let ret = script.execute();
+        assert!(ret.is_ok(), "Script execution nowait");
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Execute {} routable wlp3s0\n",
+                script_path.display()
+            )
+        );
+        thread::sleep(std::time::Duration::from_secs(3));
+        assert_eq!(
+            next_log(&mut reader),
+            format!(
+                " INFO networkd_broker::script: Finished executing {} routable wlp3s0, exit status: 0\n",
+                script_path.display()
+            )
+        );
+    }
+
+    fn setup_log() -> NamedTempFile {
+        let log_file = NamedTempFile::new().unwrap();
+        // println!("{}", log_file.path().display());
+        tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::new("networkd_broker=debug"))
+            .without_time()
+            .with_writer(log_file.reopen().unwrap())
+            .init();
+        log_file
+    }
+
+    fn setup_script_dir() -> tempfile::TempDir {
         let temp_dir = TempDir::new().unwrap();
         assert!(temp_dir.path().to_owned().exists());
 
@@ -311,156 +906,5 @@ mod tests {
         }
 
         temp_dir
-    }
-
-    #[test]
-    fn test_arguments_order() {
-        let mut args = ScriptArguments::new();
-        args.state = "routable".to_string();
-        args.iface = "eth0".to_string();
-        assert_eq!(args.pack(), vec!["routable", "eth0"]);
-    }
-
-    #[test]
-    fn test_script_new() {
-        // Normal script
-        let script = Script::new(PathBuf::from("/etc/networkd/broker.d/carrier.d/00-script"));
-        assert!(!script.no_wait);
-
-        // No-wait script
-        let script = Script::new(PathBuf::from(
-            "/etc/networkd/broker.d/carrier.d/00-script-nowait",
-        ));
-        assert!(script.no_wait);
-    }
-
-    #[test]
-    fn test_get_scripts_in() {
-        let temp_dir = setup_get_scripts_in();
-        let broker_root = temp_dir.path().join("etc/networkd/broker.d");
-        let uid = get_current_uid();
-        let gid = get_current_gid();
-
-        // 3 scripts of current uid/gid for carrier state
-        // 00-executable
-        // 05-executable-nowait
-        // 10-executable
-        let carrier_d = broker_root.join("carrier.d");
-        let scripts = Script::get_scripts_in(carrier_d, Some(uid), Some(gid)).unwrap();
-        assert_eq!(scripts.len(), 3);
-        assert_eq!(
-            scripts[0].path.file_name(),
-            Some(OsStr::new("00-executable"))
-        );
-        assert_eq!(
-            scripts[1].path.file_name(),
-            Some(OsStr::new("05-executable-nowait"))
-        );
-        assert_eq!(
-            scripts[2].path.file_name(),
-            Some(OsStr::new("10-executable"))
-        );
-
-        // No script for configuring state
-        let configuring_d = broker_root.join("configuring.d");
-        let result = Script::get_scripts_in(configuring_d, Some(uid), Some(gid));
-        assert!(result.is_err());
-
-        // No script for root in degraded.d
-        let degraded_d = broker_root.join("degraded.d");
-        let result = Script::get_scripts_in(degraded_d, None, None);
-        assert!(result.is_err());
-
-        // No directory for routable state
-        let routable_d = broker_root.join("routable.d");
-        let result = Script::get_scripts_in(routable_d, Some(uid), Some(gid));
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_script_execute() {
-        let state = "routable".to_string();
-        let iface = "wlp3s0".to_string();
-
-        let mut args = ScriptArguments::new();
-        args.state = state.clone();
-        args.iface = iface.clone();
-        let shared_args = Arc::new(args);
-
-        let mut envs = Environments::new();
-        envs.add(ScriptEnvironment::DeviceIface, iface)
-            .add(ScriptEnvironment::BrokerAction, state)
-            .add(ScriptEnvironment::Json, "".to_string());
-        let shared_envs = Arc::new(envs);
-
-        // Should pass, wait
-        let mut script = Script::new(PathBuf::from(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests",
-            "/script-execute-test.sh"
-        )));
-        script.args = Some(shared_args.clone());
-        script.envs = Some(shared_envs.clone());
-        assert!(script.execute().is_ok(), "Should pass (wait)");
-
-        // Should pass, no wait
-        let mut script = Script::new(PathBuf::from(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests",
-            "/script-execute-test-nowait.sh"
-        )));
-        script.args = Some(shared_args.clone());
-        script.envs = Some(shared_envs.clone());
-        assert!(script.execute().is_ok(), "Should pass (nowait)");
-
-        // no-such-file should not cause panic, wait
-        let mut script = Script::new(PathBuf::from(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests",
-            "/no-such-file"
-        )));
-        script.args = Some(shared_args.clone());
-        script.envs = Some(shared_envs.clone());
-        let ret = script.execute();
-        assert!(ret.is_ok(), "no-such-file should not cause panic (wait)");
-
-        // no-such-file should not cause panic, nowait
-        let mut script = Script::new(PathBuf::from(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests",
-            "/no-such-file-nowait"
-        )));
-        script.args = Some(shared_args.clone());
-        script.envs = Some(shared_envs.clone());
-        let ret = script.execute();
-        assert!(ret.is_ok(), "no-such-file should not cause panic (nowait)");
-
-        // Script failure should not cause panic, wait
-        let mut script = Script::new(PathBuf::from(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests",
-            "/script-execute-test.sh"
-        )));
-        script.args = Some(shared_args.clone());
-        script.envs = Some(shared_envs.clone());
-        std::env::set_var("SCRIPT_FAILURE", "1");
-        assert!(
-            script.execute().is_ok(),
-            "Script failure should not cause panic (wait)"
-        );
-
-        // Script failure should not cause panic, nowait
-        let mut script = Script::new(PathBuf::from(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests",
-            "/script-execute-test-nowait.sh"
-        )));
-        script.args = Some(shared_args);
-        script.envs = Some(shared_envs);
-        std::env::set_var("SCRIPT_FAILURE", "1");
-        assert!(
-            script.execute().is_ok(),
-            "Script failure should not cause panic (nowait)"
-        );
     }
 }
