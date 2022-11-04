@@ -1,3 +1,4 @@
+use crate::script::DEFAULT_TIMEOUT;
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -17,7 +18,7 @@ pub struct Arguments {
     pub run_startup_triggers: bool,
 
     /// Script execution timeout in seconds
-    #[arg(short = 't', long = "timeout", default_value = "20")]
+    #[arg(short = 't', long = "timeout", default_value_t = DEFAULT_TIMEOUT)]
     pub timeout: u64,
 }
 
@@ -36,7 +37,7 @@ mod tests {
         .expect("Paring argument");
         assert_eq!(args.script_dir, PathBuf::from("/etc/networkd/broker.d"));
         assert!(!args.run_startup_triggers);
-        assert_eq!(args.timeout, 20);
+        assert_eq!(args.timeout, DEFAULT_TIMEOUT);
 
         // Full long arguments
         let args = Arguments::from_arg_matches(&Arguments::command().get_matches_from(vec![
