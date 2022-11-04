@@ -68,14 +68,7 @@ impl ScriptBuilder {
     }
 
     pub fn build(self) -> Script {
-        let timeout = if self
-            .path
-            .file_stem()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .ends_with("-nowait")
-        {
+        let timeout = if ScriptBuilder::should_run_nowait(&self.path) {
             None
         } else {
             Some(self.default_timeout)
@@ -133,6 +126,14 @@ impl ScriptBuilder {
         }
 
         Ok(scripts)
+    }
+
+    fn should_run_nowait(path: &Path) -> bool {
+        path.file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .ends_with("-nowait")
     }
 }
 
@@ -235,6 +236,37 @@ mod tests {
     use tempfile::{NamedTempFile, TempDir};
     use tracing_subscriber::EnvFilter;
     use users::{get_current_gid, get_current_uid};
+
+    #[test]
+    fn should_run_nowait() {
+        assert!(!ScriptBuilder::should_run_nowait(Path::new(
+            "/a/b/c/script.sh"
+        )));
+
+        assert!(!ScriptBuilder::should_run_nowait(Path::new(
+            "/a/b/c/script"
+        )));
+
+        assert!(ScriptBuilder::should_run_nowait(Path::new(
+            "/a/b/c/script-nowait.sh"
+        )));
+
+        assert!(ScriptBuilder::should_run_nowait(Path::new(
+            "/a/b/c/script-nowait"
+        )));
+
+        assert!(!ScriptBuilder::should_run_nowait(Path::new(
+            "/a/b/c/script.sh-nowait"
+        )));
+
+        assert!(!ScriptBuilder::should_run_nowait(Path::new(
+            "/a/b/c/script.-nowait"
+        )));
+
+        assert!(ScriptBuilder::should_run_nowait(Path::new(
+            "/a/b/c/script.-nowait.sh"
+        )));
+    }
 
     #[test]
     fn build_new_script() {
