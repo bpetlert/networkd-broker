@@ -12,8 +12,7 @@ participant "**DBus**" as DBus
 
 box "networkd-broker" #DeepSkyBlue
 participant Broker
-participant Script
-participant Environments
+participant ScriptBuilder
 participant Launcher
 end box
 
@@ -27,11 +26,9 @@ Broker ->> Broker ++ : listen to link events
 
 == Receive Signal ==
 DBus -> Broker ++ : link event signal
-Broker -> Script ++ : get script list
-return script list
-Broker -> Environments ++ : fetch env
-return env
-Broker -> Launcher --: send script list to queue
+Broker -> ScriptBuilder ++ : build scripts correspond to link event
+return scripts
+Broker -> Launcher --: send scripts to queue
 
 == Execute Script Queue ==
 Launcher ->> System ++ : execute script
