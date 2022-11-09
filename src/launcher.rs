@@ -4,7 +4,7 @@ use std::{
     sync::mpsc::{channel, RecvError, Sender},
     thread,
 };
-use tracing::warn;
+use tracing::{debug, error, warn};
 
 #[derive(Debug)]
 pub struct Launcher {
@@ -18,11 +18,14 @@ impl Launcher {
         thread::spawn(move || loop {
             match rx.recv() {
                 Ok(script) => {
+                    debug!("Received a script {script:?}");
                     if let Err(err) = script.execute() {
                         warn!("{err}");
                     }
                 }
-                Err(RecvError {}) => {}
+                Err(RecvError {}) => {
+                    error!("Failed to receive script");
+                }
             };
         });
 

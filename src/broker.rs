@@ -171,6 +171,7 @@ impl Broker {
                 .add_env(EnvVar::Json(event.link_details_json.clone()))
                 .set_default_timeout(self.script_timeout)
                 .build();
+            debug!("Add script {script:?} to launcher's queue");
             if let Err(err) = self.launcher.add(script) {
                 warn!("{err}");
             }
