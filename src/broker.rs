@@ -166,9 +166,9 @@ impl Broker {
             let script = script
                 .set_arg0(&event.state.clone())
                 .set_arg1(&event.iface.clone())
-                .add_env(EnvVar::DeviceIface, event.iface.clone())
-                .add_env(EnvVar::BrokerAction, event.state.clone())
-                .add_env(EnvVar::Json, event.link_details_json.clone())
+                .add_env(EnvVar::DeviceIface(event.iface.clone()))
+                .add_env(EnvVar::BrokerAction(event.state.clone()))
+                .add_env(EnvVar::Json(event.link_details_json.clone()))
                 .set_default_timeout(self.script_timeout)
                 .build();
             if let Err(err) = self.launcher.add(script) {

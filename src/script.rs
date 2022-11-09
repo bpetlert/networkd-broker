@@ -1,29 +1,41 @@
 use anyhow::{bail, Result};
 use std::{
     collections::HashMap,
+    fmt,
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     process::Command,
     thread,
     time::Duration,
 };
-use strum::{Display, EnumString};
 use tracing::{info, warn};
 use wait_timeout::ChildExt;
 use walkdir::WalkDir;
 
 pub const DEFAULT_TIMEOUT: u64 = 20; // seconds
 
-#[derive(Debug, PartialEq, Eq, EnumString, Display)]
+#[derive(Debug)]
 pub enum EnvVar {
-    #[strum(serialize = "NWD_DEVICE_IFACE")]
-    DeviceIface,
+    DeviceIface(String),
+    BrokerAction(String),
+    Json(String),
 
-    #[strum(serialize = "NWD_BROKER_ACTION")]
-    BrokerAction,
+    #[allow(dead_code)]
+    Custom {
+        key: String,
+        value: String,
+    },
+}
 
-    #[strum(serialize = "NWD_JSON")]
-    Json,
+impl fmt::Display for EnvVar {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EnvVar::DeviceIface(_) => write!(f, "NWD_DEVICE_IFACE"),
+            EnvVar::BrokerAction(_) => write!(f, "NWD_BROKER_ACTION"),
+            EnvVar::Json(_) => write!(f, "NWD_JSON"),
+            EnvVar::Custom { key, value: _ } => write!(f, "NWD_{key}"),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -57,8 +69,15 @@ impl ScriptBuilder {
         self
     }
 
-    pub fn add_env(mut self, name: EnvVar, value: String) -> Self {
-        self.envs.insert(name.to_string(), value);
+    pub fn add_env(mut self, env_var: EnvVar) -> Self {
+        let value = match &env_var {
+            EnvVar::DeviceIface(value)
+            | EnvVar::BrokerAction(value)
+            | EnvVar::Json(value)
+            | EnvVar::Custom { key: _, value } => value,
+        };
+
+        self.envs.insert(env_var.to_string(), value.to_string());
         self
     }
 
@@ -459,7 +478,7 @@ mod tests {
             .set_path(script_path)
             .set_arg0(STATE)
             .set_arg1(IFACE)
-            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .add_env(EnvVar::DeviceIface(IFACE.to_string()))
             .build();
         let ret = script.execute();
         assert!(
@@ -491,8 +510,8 @@ mod tests {
             .set_path(script_path)
             .set_arg0(STATE)
             .set_arg1(IFACE)
-            .add_env(EnvVar::DeviceIface, IFACE.to_string())
-            .add_env(EnvVar::BrokerAction, STATE.to_string())
+            .add_env(EnvVar::DeviceIface(IFACE.to_string()))
+            .add_env(EnvVar::BrokerAction(STATE.to_string()))
             .build();
         let ret = script.execute();
         assert!(ret.is_ok(), "Missing NWD_JSON environment variable");
@@ -511,7 +530,7 @@ mod tests {
             )
         );
 
-        // SCRIPT_FAILURE
+        // Script failed
         let script_path = Path::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
@@ -521,13 +540,16 @@ mod tests {
             .set_path(script_path)
             .set_arg0(STATE)
             .set_arg1(IFACE)
-            .add_env(EnvVar::DeviceIface, IFACE.to_string())
-            .add_env(EnvVar::BrokerAction, STATE.to_string())
-            .add_env(EnvVar::Json, "".to_string())
+            .add_env(EnvVar::DeviceIface(IFACE.to_string()))
+            .add_env(EnvVar::BrokerAction(STATE.to_string()))
+            .add_env(EnvVar::Json("".to_string()))
+            .add_env(EnvVar::Custom {
+                key: "SCRIPT_FAILURE".to_string(),
+                value: "1".to_string(),
+            })
             .build();
-        std::env::set_var("SCRIPT_FAILURE", "1");
         let ret = script.execute();
-        assert!(ret.is_ok(), "SCRIPT_FAILURE");
+        assert!(ret.is_ok(), "Script failed");
         assert_eq!(
             next_log(&mut reader),
             format!(
@@ -549,9 +571,9 @@ mod tests {
             .set_path(script_path)
             .set_arg0(STATE)
             .set_arg1(IFACE)
-            .add_env(EnvVar::DeviceIface, IFACE.to_string())
-            .add_env(EnvVar::BrokerAction, STATE.to_string())
-            .add_env(EnvVar::Json, "".to_string())
+            .add_env(EnvVar::DeviceIface(IFACE.to_string()))
+            .add_env(EnvVar::BrokerAction(STATE.to_string()))
+            .add_env(EnvVar::Json("".to_string()))
             .build();
         let ret = script.execute();
         assert!(ret.is_err(), "Script is not exist");
@@ -574,12 +596,15 @@ mod tests {
             .set_path(script_path)
             .set_arg0(STATE)
             .set_arg1(IFACE)
-            .add_env(EnvVar::DeviceIface, IFACE.to_string())
-            .add_env(EnvVar::BrokerAction, STATE.to_string())
-            .add_env(EnvVar::Json, "".to_string())
+            .add_env(EnvVar::DeviceIface(IFACE.to_string()))
+            .add_env(EnvVar::BrokerAction(STATE.to_string()))
+            .add_env(EnvVar::Json("".to_string()))
+            .add_env(EnvVar::Custom {
+                key: "SCRIPT_FAILURE".to_string(),
+                value: "2".to_string(),
+            })
             .set_default_timeout(2)
             .build();
-        std::env::set_var("SCRIPT_FAILURE", "2");
         let ret = script.execute();
         assert!(ret.is_err(), "Script execution timeout");
         warn!("{}", ret.unwrap_err());
@@ -717,7 +742,7 @@ mod tests {
             .set_path(script_path)
             .set_arg0(STATE)
             .set_arg1(IFACE)
-            .add_env(EnvVar::DeviceIface, IFACE.to_string())
+            .add_env(EnvVar::DeviceIface(IFACE.to_string()))
             .build();
         let ret = script.execute();
         wait_for_thread();
@@ -750,8 +775,8 @@ mod tests {
             .set_path(script_path)
             .set_arg0(STATE)
             .set_arg1(IFACE)
-            .add_env(EnvVar::DeviceIface, IFACE.to_string())
-            .add_env(EnvVar::BrokerAction, STATE.to_string())
+            .add_env(EnvVar::DeviceIface(IFACE.to_string()))
+            .add_env(EnvVar::BrokerAction(STATE.to_string()))
             .build();
         let ret = script.execute();
         wait_for_thread();
@@ -771,7 +796,7 @@ mod tests {
             )
         );
 
-        // SCRIPT_FAILURE
+        // Script failed
         let script_path = Path::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests",
@@ -781,14 +806,17 @@ mod tests {
             .set_path(script_path)
             .set_arg0(STATE)
             .set_arg1(IFACE)
-            .add_env(EnvVar::DeviceIface, IFACE.to_string())
-            .add_env(EnvVar::BrokerAction, STATE.to_string())
-            .add_env(EnvVar::Json, "".to_string())
+            .add_env(EnvVar::DeviceIface(IFACE.to_string()))
+            .add_env(EnvVar::BrokerAction(STATE.to_string()))
+            .add_env(EnvVar::Json("".to_string()))
+            .add_env(EnvVar::Custom {
+                key: "SCRIPT_FAILURE".to_string(),
+                value: "1".to_string(),
+            })
             .build();
-        std::env::set_var("SCRIPT_FAILURE", "1");
         let ret = script.execute();
         wait_for_thread();
-        assert!(ret.is_ok(), "SCRIPT_FAILURE");
+        assert!(ret.is_ok(), "Script failed");
         assert_eq!(
             next_log(&mut reader),
             format!(
@@ -810,9 +838,9 @@ mod tests {
             .set_path(script_path)
             .set_arg0(STATE)
             .set_arg1(IFACE)
-            .add_env(EnvVar::DeviceIface, IFACE.to_string())
-            .add_env(EnvVar::BrokerAction, STATE.to_string())
-            .add_env(EnvVar::Json, "".to_string())
+            .add_env(EnvVar::DeviceIface(IFACE.to_string()))
+            .add_env(EnvVar::BrokerAction(STATE.to_string()))
+            .add_env(EnvVar::Json("".to_string()))
             .build();
         let ret = script.execute();
         assert!(ret.is_err(), "Script is not exist");
@@ -835,11 +863,14 @@ mod tests {
             .set_path(script_path)
             .set_arg0(STATE)
             .set_arg1(IFACE)
-            .add_env(EnvVar::DeviceIface, IFACE.to_string())
-            .add_env(EnvVar::BrokerAction, STATE.to_string())
-            .add_env(EnvVar::Json, "".to_string())
+            .add_env(EnvVar::DeviceIface(IFACE.to_string()))
+            .add_env(EnvVar::BrokerAction(STATE.to_string()))
+            .add_env(EnvVar::Json("".to_string()))
+            .add_env(EnvVar::Custom {
+                key: "SCRIPT_FAILURE".to_string(),
+                value: "3".to_string(),
+            })
             .build();
-        std::env::set_var("SCRIPT_FAILURE", "3");
         let ret = script.execute();
         assert!(ret.is_ok(), "Script execution nowait");
         assert_eq!(
