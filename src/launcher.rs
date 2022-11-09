@@ -34,3 +34,9 @@ impl Launcher {
         Ok(())
     }
 }
+
+impl Default for Launcher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
