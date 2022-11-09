@@ -33,19 +33,19 @@ if [[ "$?" -ne 0 ]]; then
     exit 56
 fi
 
-if [[ "NWD_SCRIPT_FAILURE" -eq 1 ]]; then
+if [[ "NWD_SCRIPT_TEST_CASE" -eq 1 ]]; then
     echo "Simulate script failure..." >&2
     /usr/bin/ls no-such-file
     exit "$?"
 fi
 
-if [[ "NWD_SCRIPT_FAILURE" -eq 2 ]]; then
+if [[ "NWD_SCRIPT_TEST_CASE" -eq 2 ]]; then
     echo "Simulate script timeout..." >&2
     sleep 60
     exit 0
 fi
 
-if [[ "NWD_SCRIPT_FAILURE" -eq 3 ]]; then
+if [[ "NWD_SCRIPT_TEST_CASE" -eq 3 ]]; then
     echo "Simulate script nowait..." >&2
     sleep 2
     exit 0

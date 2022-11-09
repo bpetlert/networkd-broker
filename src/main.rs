@@ -1,21 +1,14 @@
-use crate::{args::Arguments, broker::Broker};
 use anyhow::{bail, Result};
 use async_std::task;
 use clap::Parser;
 use mimalloc::MiMalloc;
+use networkd_broker::{args::Arguments, broker::Broker};
 use std::io;
 use tracing::{debug, info, warn};
 use tracing_subscriber::EnvFilter;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
-
-mod args;
-mod broker;
-mod dbus_interface;
-mod launcher;
-mod link;
-mod script;
 
 fn main() -> Result<()> {
     let filter =
