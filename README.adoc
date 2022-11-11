@@ -4,7 +4,7 @@
 
 image:https://img.shields.io/github/v/tag/bpetlert/networkd-broker?include_prereleases&label=release&style=flat-square[Release,link=https://github.com/bpetlert/networkd-broker/releases/latest]
 image:https://img.shields.io/aur/version/networkd-broker?style=flat-square["AUR: networkd-broker",link=https://aur.archlinux.org/packages/networkd-broker/]
-image:https://img.shields.io/github/license/bpetlert/networkd-broker?style=flat-square["License: MIT",link=./LICENSE]
+image:https://img.shields.io/github/license/bpetlert/networkd-broker?style=flat-square["License: GPL-3.0-or-later",link=./COPYING]
 
 The networkd-broker is an event broker daemon for systemd-networkd.
 It will execute scripts in the `/etc/networkd/broker.d/<STATE>.d` directory in alphabetical order in response to network events.
