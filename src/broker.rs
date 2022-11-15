@@ -4,7 +4,7 @@ use crate::{
     link::{LinkDetails, LinkEvent},
     script::{EnvVar, ScriptBuilder},
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use futures_util::stream::StreamExt;
 use libsystemd::daemon::{self, NotifyState};
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
@@ -60,17 +60,16 @@ impl Broker {
         let mut stream = MessageStream::from(&self.dbus_conn);
 
         debug!("Notify systemd that we are ready :)");
-        let _ = daemon::notify(false, &[NotifyState::Ready])
-            .context("Failed to notify systemd: ready")?;
+        if !daemon::notify(false, &[NotifyState::Ready])? {
+            error!("Cannot notify systemd, READY=1");
+        }
 
-        debug!("Start listening to link events...");
-        let _ = daemon::notify(
-            false,
-            &[NotifyState::Status(
-                "Start listening to link events...".to_string(),
-            )],
-        )
-        .context("Failed to notify systemd: Start listening to link events...")?;
+        const NOTIFY_MSG: &str = "Start listening to link events...";
+        if !daemon::notify(false, &[NotifyState::Status(NOTIFY_MSG.to_string())])? {
+            error!("Cannot notify systemd, STATUS={NOTIFY_MSG}");
+        }
+
+        info!("{NOTIFY_MSG}");
 
         futures_util::try_join!(async {
             while let Some(msg) = stream.next().await {
