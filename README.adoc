@@ -31,8 +31,7 @@ $ pacman -U networkd-broker-xxxx-1-x86_64.pkg.tar
 Then enable/start networkd-broker.service
 
 [source,console]
-$ systemctl enable networkd-broker.service
-$ systemctl start networkd-broker.service
+$ systemctl enable --now networkd-broker.service
 
 == Configuration
 
@@ -45,11 +44,16 @@ To change the options of networkd-broker service e.g. enable debug, run `systemc
 Environment='RUST_LOG=networkd_broker=debug'
 ----
 
-Or enable `--run-startup-triggers`
+Or enable `--run-startup-triggers`.
+Start this service after `systemd-networkd.service` to ensure network devices are already configure or rename.
 
 ./etc/systemd/system/networkd-broker.service.d/override.conf
 [source,ini]
 ----
+[Unit]
+Wants=systemd-networkd.service
+After=systemd-networkd.service
+
 [Service]
 ExecStart=
 ExecStart=/usr/bin/networkd-broker --run-startup-triggers
@@ -61,7 +65,8 @@ The scripts for any network event need to be putted (or symlink) in its correspo
 Each script must be a regular executable file owned by root.
 The default execution timeout of each script is 20 seconds.
 It can be overridden by `--timeout` option in service configuration.
-Any of the scripts which end with '-nowait' is run immediately, without waitting for the termination of previous scripts.
+Any of the scripts which has filename (exclude extension) end with '-nowait' is run immediately, without waitting for the termination of previous scripts.
+e.g. `script-nowait`, `script-nowait.sh`
 
 [source,console]
 ----
@@ -107,7 +112,8 @@ The following environment variables are being passed to each script:
 === Example script
 
 The script below activate/deactivate https://wiki.archlinux.org/index.php/Chrony[Chrony] correspond to link state of `wlp3s0` link.
-This script must be put (or symlink) in `/etc/networkd/broker.d/routable.d`, and `/etc/networkd/broker.d/no-carrier.d`.
+This is useful if your computer is not connected to the internet on startup and use `offline` option for NTP sources.
+The script must be put (or symlink) in `/etc/networkd/broker.d/routable.d`, and `/etc/networkd/broker.d/no-carrier.d`.
 
 .chrony-switch
 [source,bash]
