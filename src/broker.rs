@@ -9,7 +9,7 @@ use futures_util::stream::StreamExt;
 use libsystemd::daemon::{self, NotifyState};
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use tracing::{debug, error, info, warn};
-use zbus::{Connection, Message, MessageStream};
+use zbus::{Connection, MatchRule, Message, MessageStream};
 
 /// A responder manages link event
 #[derive(Debug)]
@@ -44,16 +44,15 @@ impl Broker {
     pub async fn listen(&mut self) -> Result<()> {
         debug!("Create filter proxy");
         let proxy = zbus::fdo::DBusProxy::new(&self.dbus_conn).await?;
-        if let Err(err) = proxy
-            .add_match(
-                "\
-                type='signal',\
-                interface='org.freedesktop.DBus.Properties',\
-                member='PropertiesChanged',\
-                path_namespace='/org/freedesktop/network1/link'",
-            )
-            .await
-        {
+
+        let rule = MatchRule::builder()
+            .msg_type(zbus::MessageType::Signal)
+            .interface("org.freedesktop.DBus.Properties")?
+            .member("PropertiesChanged")?
+            .path_namespace("/org/freedesktop/network1/link")?
+            .build();
+
+        if let Err(err) = proxy.add_match_rule(rule).await {
             bail!("Cannot crate filter proxy, {err}");
         }
 
