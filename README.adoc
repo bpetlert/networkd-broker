@@ -109,7 +109,7 @@ The following environment variables are being passed to each script:
 | All the link details are encoded in JSON format.
 |===
 
-=== Example script
+=== Example Usage
 
 The script below activate/deactivate https://wiki.archlinux.org/index.php/Chrony[Chrony] correspond to link state of `wlp3s0` link.
 This is useful if your computer is not connected to the internet on startup and use `offline` option for NTP sources.
@@ -152,6 +152,18 @@ fi
     ├── off.d
     └── routable.d
         └── 10-chrony-switch-nowait -> /usr/local/bin/chrony-switch
+----
+
+./etc/systemd/system/networkd-broker.service.d/override.conf
+[source,ini]
+----
+[Unit]
+Wants=systemd-networkd.service chronyd.service
+After=systemd-networkd.service chronyd.service
+
+[Service]
+ExecStart=
+ExecStart=/usr/bin/networkd-broker --run-startup-triggers
 ----
 
 == Design
