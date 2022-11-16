@@ -45,7 +45,7 @@ Environment='RUST_LOG=networkd_broker=debug'
 ----
 
 Or enable `--run-startup-triggers`.
-Start this service after `systemd-networkd.service` to ensure network devices are already configure or rename.
+Start this service after `systemd-networkd.service` to ensure network devices are already configured or renamed.
 
 ./etc/systemd/system/networkd-broker.service.d/override.conf
 [source,ini]
