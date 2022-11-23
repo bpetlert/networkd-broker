@@ -1,6 +1,8 @@
-use crate::script::DEFAULT_TIMEOUT;
-use clap::Parser;
 use std::path::PathBuf;
+
+use clap::Parser;
+
+use crate::script::DEFAULT_TIMEOUT;
 
 #[derive(PartialEq, Eq, Debug, Parser)]
 #[command(author, version, about, long_about = None)]

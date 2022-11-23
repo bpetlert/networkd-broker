@@ -1,10 +1,12 @@
-use crate::script::Script;
-use anyhow::Result;
 use std::{
     sync::mpsc::{channel, RecvError, Sender},
     thread,
 };
+
+use anyhow::Result;
 use tracing::{debug, error, warn};
+
+use crate::script::Script;
 
 #[derive(Debug)]
 pub struct Launcher {

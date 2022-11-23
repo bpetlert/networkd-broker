@@ -1,8 +1,9 @@
-use crate::dbus_interface::NetworkManagerProxy;
 use anyhow::{anyhow, bail, Result};
 use serde::Deserialize;
 use tracing::debug;
 use zbus::{Message, MessageType};
+
+use crate::dbus_interface::NetworkManagerProxy;
 
 #[derive(Deserialize)]
 pub struct LinkDetails {

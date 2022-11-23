@@ -1,4 +1,3 @@
-use anyhow::{bail, Result};
 use std::{
     collections::HashMap,
     fmt,
@@ -8,6 +7,8 @@ use std::{
     thread,
     time::Duration,
 };
+
+use anyhow::{bail, Result};
 use tracing::{info, warn};
 use wait_timeout::ChildExt;
 use walkdir::WalkDir;

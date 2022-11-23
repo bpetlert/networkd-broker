@@ -1,15 +1,17 @@
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
+
+use anyhow::{bail, Result};
+use futures_util::stream::StreamExt;
+use libsystemd::daemon::{self, NotifyState};
+use tracing::{debug, error, info, warn};
+use zbus::{Connection, MatchRule, Message, MessageStream};
+
 use crate::{
     dbus_interface::NetworkManagerProxy,
     launcher::Launcher,
     link::{LinkDetails, LinkEvent},
     script::{EnvVar, ScriptBuilder},
 };
-use anyhow::{bail, Result};
-use futures_util::stream::StreamExt;
-use libsystemd::daemon::{self, NotifyState};
-use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
-use tracing::{debug, error, info, warn};
-use zbus::{Connection, MatchRule, Message, MessageStream};
 
 /// A responder manages link event
 #[derive(Debug)]
