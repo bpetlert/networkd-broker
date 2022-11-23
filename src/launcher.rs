@@ -3,7 +3,7 @@ use std::{
     thread,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use tracing::{debug, error, warn};
 
 use crate::script::Script;
@@ -35,7 +35,9 @@ impl Launcher {
     }
 
     pub fn add(&self, script: Script) -> Result<()> {
-        self.tx.send(Box::new(script))?;
+        self.tx
+            .send(Box::new(script))
+            .context("Failed to send a script to launcher channel")?;
         Ok(())
     }
 }

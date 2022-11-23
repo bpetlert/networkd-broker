@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use tracing::debug;
 use zbus::{Message, MessageType};
@@ -66,7 +66,9 @@ impl LinkEvent {
         debug!("Get link details of {link:?}");
         let proxy = NetworkManagerProxy::new(conn).await?;
         let describe_link = proxy.describe_link(link.index).await?;
-        let link_details = match serde_json::from_str::<LinkDetails>(&describe_link) {
+        let link_details = match serde_json::from_str::<LinkDetails>(&describe_link)
+            .with_context(|| format!("Cannot get link state of `{}`", link.name))
+        {
             Ok(link_details) => {
                 debug!(
                     "AdministrativeState: {a}\
@@ -84,7 +86,7 @@ impl LinkEvent {
                 );
                 link_details
             }
-            Err(err) => bail!("Cannot get link state: {err}"),
+            Err(err) => bail!("{err:#}"),
         };
 
         Ok(Box::new(LinkEvent {
@@ -108,7 +110,7 @@ impl LinkEvent {
                 });
             }
         }
-        Err(anyhow!("No iface found on {path}"))
+        bail!("No iface found on {path}");
     }
 }
 

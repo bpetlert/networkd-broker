@@ -103,20 +103,19 @@ impl ScriptBuilder {
     }
 
     pub fn build_from(
-        path: PathBuf,
+        path: &Path,
         uid: Option<u32>,
         gid: Option<u32>,
     ) -> Result<Vec<ScriptBuilder>> {
-        // Path exists?
         if !path.exists() {
-            bail!("{} does not exist", path.display());
+            bail!("`{}` does not exist", path.display());
         }
 
         let uid = uid.unwrap_or(0);
         let gid = gid.unwrap_or(0);
         let mut scripts: Vec<ScriptBuilder> = Vec::new();
 
-        for entry in WalkDir::new(&path)
+        for entry in WalkDir::new(path)
             .min_depth(1)
             .max_depth(1)
             .sort_by(|a, b| a.file_name().cmp(b.file_name()))
@@ -142,7 +141,7 @@ impl ScriptBuilder {
         }
 
         if scripts.is_empty() {
-            bail!("No script in {}.", path.display());
+            bail!("No script in `{}`", path.display());
         }
 
         Ok(scripts)
@@ -329,7 +328,7 @@ mod tests {
         // 05-executable-nowait
         // 10-executable
         let carrier_d = broker_root.join("carrier.d");
-        let scripts = ScriptBuilder::build_from(carrier_d, Some(uid), Some(gid)).unwrap();
+        let scripts = ScriptBuilder::build_from(&carrier_d, Some(uid), Some(gid)).unwrap();
         assert_eq!(scripts.len(), 3);
         assert_eq!(
             scripts[0].path.file_name(),
@@ -346,17 +345,17 @@ mod tests {
 
         // No script for configuring state
         let configuring_d = broker_root.join("configuring.d");
-        let result = ScriptBuilder::build_from(configuring_d, Some(uid), Some(gid));
+        let result = ScriptBuilder::build_from(&configuring_d, Some(uid), Some(gid));
         assert!(result.is_err());
 
         // No script for root in degraded.d
         let degraded_d = broker_root.join("degraded.d");
-        let result = ScriptBuilder::build_from(degraded_d, None, None);
+        let result = ScriptBuilder::build_from(&degraded_d, None, None);
         assert!(result.is_err());
 
         // No directory for routable state
         let routable_d = broker_root.join("routable.d");
-        let result = ScriptBuilder::build_from(routable_d, Some(uid), Some(gid));
+        let result = ScriptBuilder::build_from(&routable_d, Some(uid), Some(gid));
         assert!(result.is_err());
     }
 

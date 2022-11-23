@@ -1,6 +1,6 @@
 use std::io;
 
-use anyhow::{bail, Result};
+use anyhow::{anyhow, Context, Result};
 use async_std::task;
 use clap::Parser;
 use mimalloc::MiMalloc;
@@ -15,28 +15,36 @@ static GLOBAL: MiMalloc = MiMalloc;
 fn main() -> Result<()> {
     let filter =
         EnvFilter::try_from_default_env().unwrap_or(EnvFilter::try_new("networkd_broker=info")?);
-    if let Err(err) = tracing_subscriber::fmt()
+    tracing_subscriber::fmt()
         .with_env_filter(filter)
         .without_time()
         .with_writer(io::stderr)
         .try_init()
-    {
-        bail!("Failed to initialize tracing subscriber: {err}");
-    }
+        .map_err(|err| anyhow!("{err:#}"))
+        .context("Failed to initialize tracing subscriber")?;
 
     let arguments = Arguments::parse();
     debug!("Run with {:?}", arguments);
 
     task::block_on(async {
-        let mut broker = Broker::new(arguments.script_dir, arguments.timeout).await?;
+        let mut broker = Broker::new(arguments.script_dir, arguments.timeout)
+            .await
+            .context("Failed to create broker thread")?;
 
         if arguments.run_startup_triggers {
             info!("Found '--run-startup-triggers'. Start execute all scripts for the current state for each interface");
-            if let Err(err) = broker.trigger_all().await {
-                warn!("{}", err);
+            if let Err(err) = broker
+                .trigger_all()
+                .await
+                .context("Failed to run startup-triggers")
+            {
+                warn!("{err:#}");
             }
         }
 
-        broker.listen().await
+        broker
+            .listen()
+            .await
+            .context("Could not start broker thread")
     })
 }

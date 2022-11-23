@@ -1,10 +1,10 @@
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use futures_util::stream::StreamExt;
 use libsystemd::daemon::{self, NotifyState};
 use tracing::{debug, error, info, warn};
-use zbus::{Connection, MatchRule, Message, MessageStream};
+use zbus::{fdo::DBusProxy, Connection, MatchRule, Message, MessageStream};
 
 use crate::{
     dbus_interface::NetworkManagerProxy,
@@ -29,10 +29,14 @@ impl Broker {
         let launcher = Launcher::new();
 
         debug!("Connect to System DBus");
-        let dbus_conn = Connection::system().await?;
+        let dbus_conn = Connection::system()
+            .await
+            .context("Could not connect to System DBus")?;
 
         debug!("Initialize link state cache");
-        let link_state_cache = Broker::init_link_state_cache(&dbus_conn).await?;
+        let link_state_cache = Broker::init_link_state_cache(&dbus_conn)
+            .await
+            .context("Failed to create link state's cache")?;
 
         Ok(Broker {
             script_root_dir,
@@ -45,7 +49,9 @@ impl Broker {
 
     pub async fn listen(&mut self) -> Result<()> {
         debug!("Create filter proxy");
-        let proxy = zbus::fdo::DBusProxy::new(&self.dbus_conn).await?;
+        let proxy: DBusProxy = zbus::fdo::DBusProxy::new(&self.dbus_conn)
+            .await
+            .context("Failed to crate dbus's filter proxy")?;
 
         let rule = MatchRule::builder()
             .msg_type(zbus::MessageType::Signal)
@@ -54,20 +60,28 @@ impl Broker {
             .path_namespace("/org/freedesktop/network1/link")?
             .build();
 
-        if let Err(err) = proxy.add_match_rule(rule).await {
-            bail!("Cannot crate filter proxy, {err}");
+        if let Err(err) = proxy
+            .add_match_rule(rule)
+            .await
+            .context("Cannot crate filter proxy")
+        {
+            bail!("{err:#}");
         }
 
         debug!("Create message stream");
         let mut stream = MessageStream::from(&self.dbus_conn);
 
         debug!("Notify systemd that we are ready :)");
-        if !daemon::notify(false, &[NotifyState::Ready])? {
+        if !daemon::notify(false, &[NotifyState::Ready])
+            .context("Could not notify systemd, READY=1")?
+        {
             error!("Cannot notify systemd, READY=1");
         }
 
         const NOTIFY_MSG: &str = "Start listening to link events...";
-        if !daemon::notify(false, &[NotifyState::Status(NOTIFY_MSG.to_string())])? {
+        if !daemon::notify(false, &[NotifyState::Status(NOTIFY_MSG.to_string())])
+            .with_context(|| format!("Cannot notify systemd, STATUS={NOTIFY_MSG}"))?
+        {
             error!("Cannot notify systemd, STATUS={NOTIFY_MSG}");
         }
 
@@ -81,7 +95,7 @@ impl Broker {
                         m
                     }
                     Err(err) => {
-                        error!("{err}");
+                        error!("{err:#}");
                         continue;
                     }
                 };
@@ -108,10 +122,10 @@ impl Broker {
                         }
 
                         if let Err(err) = self.respond(&link_event) {
-                            warn!("{err}");
+                            warn!("{err:#}");
                         }
                     }
-                    Err(err) => debug!("{err}"),
+                    Err(err) => debug!("{err:#}"),
                 }
             }
             Ok::<(), zbus::Error>(())
@@ -128,9 +142,11 @@ impl Broker {
 
             let describe_link = proxy.describe_link(index).await?;
 
-            let link_details = match serde_json::from_str::<LinkDetails>(&describe_link) {
+            let link_details = match serde_json::from_str::<LinkDetails>(&describe_link)
+                .with_context(|| format!("Cannot get link state of `{name}`"))
+            {
                 Ok(link_details) => link_details,
-                Err(err) => bail!("Cannot get link state of {name}: {err}"),
+                Err(err) => bail!("{err:#}"),
             };
 
             let event = Box::new(LinkEvent {
@@ -141,8 +157,11 @@ impl Broker {
                 link_details_json: describe_link,
             });
 
-            if let Err(err) = self.respond(&event) {
-                warn!("{err}");
+            if let Err(err) = self
+                .respond(&event)
+                .with_context(|| format!("Failed to respond to `{event}`"))
+            {
+                warn!("{err:#}");
             }
         }
 
@@ -156,9 +175,11 @@ impl Broker {
         // Get all scripts associated with current event
         let state_dir = format!("{}.d", event.state);
         let script_path = self.script_root_dir.join(state_dir);
-        let scripts = match ScriptBuilder::build_from(script_path, None, None) {
+        let scripts = match ScriptBuilder::build_from(&script_path, None, None)
+            .with_context(|| format!("Could not get scripts from `{}`", script_path.display()))
+        {
             Ok(s) => s,
-            Err(err) => bail!("{err}"),
+            Err(err) => bail!("{err:#}"),
         };
 
         // Push scripts with args + envs to launcher's queue.
@@ -173,7 +194,7 @@ impl Broker {
                 .build();
             debug!("Add script {script:?} to launcher's queue");
             if let Err(err) = self.launcher.add(script) {
-                warn!("{err}");
+                warn!("{err:#}");
             }
         }
 
@@ -187,9 +208,11 @@ impl Broker {
         for (index, name, _path) in links {
             let describe_link = proxy.describe_link(index).await?;
 
-            let link_details = match serde_json::from_str::<LinkDetails>(&describe_link) {
+            let link_details = match serde_json::from_str::<LinkDetails>(&describe_link)
+                .with_context(|| format!("Cannot get link state of `{name}`"))
+            {
                 Ok(link_details) => link_details,
-                Err(err) => bail!("Cannot get link state of {name}: {err}"),
+                Err(err) => bail!("{err:#}"),
             };
 
             cache.insert(name, link_details.operational_state);
