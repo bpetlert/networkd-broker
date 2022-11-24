@@ -8,8 +8,8 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{bail, Result};
-use tracing::{info, warn};
+use anyhow::{bail, Context, Result};
+use tracing::{debug, info, warn};
 use wait_timeout::ChildExt;
 use walkdir::WalkDir;
 
@@ -102,6 +102,11 @@ impl ScriptBuilder {
         }
     }
 
+    /// Get executable scripts from a path
+    ///
+    /// * `uid` - Acceptable user ID of a script. Default is 0 (root)
+    /// * `gid` - Acceptable group ID of a script. Default is 0 (root)
+    ///
     pub fn build_from(
         path: &Path,
         uid: Option<u32>,
@@ -111,8 +116,9 @@ impl ScriptBuilder {
             bail!("`{}` does not exist", path.display());
         }
 
-        let uid = uid.unwrap_or(0);
-        let gid = gid.unwrap_or(0);
+        let uid = uid.unwrap_or(0); // Default is UID of root
+        let gid = gid.unwrap_or(0); // Default is GID of root
+
         let mut scripts: Vec<ScriptBuilder> = Vec::new();
 
         for entry in WalkDir::new(path)
@@ -122,18 +128,40 @@ impl ScriptBuilder {
             .into_iter()
             .filter_map(|e| e.ok())
         {
-            let metadata = entry.metadata().unwrap();
+            let metadata = match entry
+                .metadata()
+                .with_context(|| format!("Failed to get metadata of `{}`", entry.path().display()))
+            {
+                Ok(m) => m,
+                Err(err) => {
+                    warn!("{err:#}");
+                    continue;
+                }
+            };
+
             if metadata.is_dir() {
+                debug!("Ignore `{}`. It is directory.", entry.path().display());
                 continue;
             }
 
-            // Has exec access?
             if metadata.mode() & 0o111 != 0o111 {
+                warn!("Ignore `{}`. It is not executable.", entry.path().display());
                 continue;
             }
 
-            // Owned by root?
-            if metadata.uid() != uid && metadata.gid() != gid {
+            if metadata.uid() != uid {
+                warn!(
+                    "Ignore `{}`. It is not owned by UID={uid}",
+                    entry.path().display()
+                );
+                continue;
+            }
+
+            if metadata.gid() != gid {
+                warn!(
+                    "Ignore `{}`. It is not owned by GID={gid}",
+                    entry.path().display()
+                );
                 continue;
             }
 
@@ -317,7 +345,7 @@ mod tests {
     }
 
     #[test]
-    fn build_new_script_from_dir() {
+    fn test_build_new_script_from_dir() {
         let temp_dir = setup_script_dir();
         let broker_root = temp_dir.path().join("etc/networkd/broker.d");
         let uid = get_current_uid();
