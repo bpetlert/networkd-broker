@@ -144,7 +144,8 @@ impl ScriptBuilder {
                 continue;
             }
 
-            if metadata.mode() & 0o111 != 0o111 {
+            // Has at least 500 for file mode
+            if metadata.mode() & 0o500 != 0o500 {
                 warn!("Ignore `{}`. It is not executable.", entry.path().display());
                 continue;
             }
