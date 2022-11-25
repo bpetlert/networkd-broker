@@ -140,7 +140,7 @@ impl ScriptBuilder {
             };
 
             if metadata.is_dir() {
-                debug!("Ignore `{}`. It is directory.", entry.path().display());
+                debug!("Ignore `{}`. It is a directory.", entry.path().display());
                 continue;
             }
 
@@ -151,7 +151,7 @@ impl ScriptBuilder {
 
             if metadata.uid() != uid {
                 warn!(
-                    "Ignore `{}`. It is not owned by UID={uid}",
+                    "Ignore `{}`. It is not owned by uid {uid}",
                     entry.path().display()
                 );
                 continue;
@@ -159,7 +159,7 @@ impl ScriptBuilder {
 
             if metadata.gid() != gid {
                 warn!(
-                    "Ignore `{}`. It is not owned by GID={gid}",
+                    "Ignore `{}`. It is not owned by gid {gid}",
                     entry.path().display()
                 );
                 continue;
