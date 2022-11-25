@@ -21,8 +21,8 @@ impl Launcher {
             match rx.recv() {
                 Ok(script) => {
                     debug!("Received a script {script:?}");
-                    if let Err(err) = script.execute() {
-                        warn!("{err}");
+                    if let Err(err) = script.execute().context("Failed to execute script") {
+                        warn!("{err:#}");
                     }
                 }
                 Err(RecvError {}) => {

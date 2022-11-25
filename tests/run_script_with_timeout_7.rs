@@ -32,7 +32,7 @@ fn script_is_not_exist() {
     assert_eq!(
         format!("{}", ret.unwrap_err().root_cause()),
         format!(
-            "Failed to execute {} routable wlp3s0, No such file or directory (os error 2)",
+            "Failed to execute {} routable wlp3s0: No such file or directory (os error 2)",
             script_path.display()
         )
     );

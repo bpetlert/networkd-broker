@@ -208,7 +208,14 @@ impl Script {
             .args(self.args.clone())
             .envs(self.envs)
             .spawn()
-        {
+            .with_context(|| {
+                format!(
+                    "Failed to execute {script} {arg0} {arg1}",
+                    script = &self.path.display(),
+                    arg0 = self.args[0],
+                    arg1 = self.args[1]
+                )
+            }) {
             Ok(process) => {
                 info!(
                     "Execute {script} {arg0} {arg1}",
@@ -218,17 +225,14 @@ impl Script {
                 );
                 process
             }
-            Err(err) => bail!(
-                "Failed to execute {script} {arg0} {arg1}, {err}",
-                script = &self.path.display(),
-                arg0 = self.args[0],
-                arg1 = self.args[1]
-            ),
+            Err(err) => bail!("{err:#}"),
         };
 
         if let Some(timeout) = self.timeout {
-            // Wait until child process to finish or timeout
-            match process.wait_timeout(Duration::from_secs(timeout))? {
+            match process
+                .wait_timeout(Duration::from_secs(timeout))
+                .context("Failed to wait until child process to finish or timeout")?
+            {
                 Some(exit_code) => {
                     info!(
                         "Finished executing {script} {arg0} {arg1}, {exit_code}",
@@ -251,19 +255,24 @@ impl Script {
             }
         } else {
             // Use thread to wait for child process' return code.
-            thread::spawn(move || match process.wait() {
-                Ok(exit_code) => info!(
-                    "Finished executing {script} {arg0} {arg1}, {exit_code}",
-                    script = &self.path.display(),
-                    arg0 = self.args[0],
-                    arg1 = self.args[1]
-                ),
-                Err(err) => warn!(
-                    "{script} {arg0} {arg1} wasn't running, {err}",
-                    script = &self.path.display(),
-                    arg0 = self.args[0],
-                    arg1 = self.args[1]
-                ),
+            thread::spawn(move || {
+                match process
+                    .wait()
+                    .context("Failed to wait until child process to finish")
+                {
+                    Ok(exit_code) => info!(
+                        "Finished executing {script} {arg0} {arg1}, {exit_code}",
+                        script = &self.path.display(),
+                        arg0 = self.args[0],
+                        arg1 = self.args[1]
+                    ),
+                    Err(err) => warn!(
+                        "{script} {arg0} {arg1} wasn't running: {err:#}",
+                        script = &self.path.display(),
+                        arg0 = self.args[0],
+                        arg1 = self.args[1]
+                    ),
+                }
             });
         }
 
