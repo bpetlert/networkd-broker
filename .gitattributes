@@ -1,2 +1,2 @@
 *.rs linguist-detectable=true
-*.sh linguist-detectable=false
+*.sh linguist-detectable=true
