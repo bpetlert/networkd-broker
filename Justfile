@@ -14,7 +14,7 @@ run-debug +ARGS='':
 
 # Run test
 test +CASES='':
-  cargo test {{CASES}}
+  RUST_BACKTRACE=1 RUST_LOG=networkd_broker=debug cargo test -- {{CASES}}
 
 # Increase semver
 bump-version VERSION:
