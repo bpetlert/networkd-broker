@@ -1,10 +1,10 @@
-use std::io;
+use std::{io, process::ExitCode};
 
 use anyhow::{anyhow, Context, Result};
 use async_std::task;
 use clap::Parser;
 use mimalloc::MiMalloc;
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
 
 use networkd_broker::{args::Arguments, broker::Broker};
@@ -12,7 +12,7 @@ use networkd_broker::{args::Arguments, broker::Broker};
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-fn main() -> Result<()> {
+fn run() -> Result<()> {
     let filter =
         EnvFilter::try_from_default_env().unwrap_or(EnvFilter::try_new("networkd_broker=info")?);
     tracing_subscriber::fmt()
@@ -47,4 +47,12 @@ fn main() -> Result<()> {
             .await
             .context("Could not start broker thread")
     })
+}
+
+fn main() -> ExitCode {
+    if let Err(err) = run() {
+        error!("{err:#}");
+        return ExitCode::FAILURE;
+    }
+    ExitCode::SUCCESS
 }
