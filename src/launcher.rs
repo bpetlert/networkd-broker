@@ -14,24 +14,27 @@ pub struct Launcher {
 }
 
 impl Launcher {
-    pub fn new() -> Launcher {
+    pub fn new() -> Result<Self> {
         let (tx, rx) = channel::<Box<Script>>();
 
-        thread::spawn(move || loop {
-            match rx.recv() {
-                Ok(script) => {
-                    debug!("Received a script {script:?}");
-                    if let Err(err) = script.execute().context("Failed to execute script") {
-                        warn!("{err:#}");
+        thread::Builder::new()
+            .name("script launcher".to_string())
+            .spawn(move || loop {
+                match rx.recv() {
+                    Ok(script) => {
+                        debug!("Received a script {script:?}");
+                        if let Err(err) = script.execute().context("Failed to execute script") {
+                            warn!("{err:#}");
+                        }
                     }
-                }
-                Err(RecvError {}) => {
-                    error!("Failed to receive script");
-                }
-            };
-        });
+                    Err(RecvError {}) => {
+                        error!("Failed to receive script");
+                    }
+                };
+            })
+            .context("Could not create script launcher thread")?;
 
-        Launcher { tx }
+        Ok(Launcher { tx })
     }
 
     pub fn add(&self, script: Script) -> Result<()> {
@@ -39,11 +42,5 @@ impl Launcher {
             .send(Box::new(script))
             .context("Failed to send a script to launcher channel")?;
         Ok(())
-    }
-}
-
-impl Default for Launcher {
-    fn default() -> Self {
-        Self::new()
     }
 }

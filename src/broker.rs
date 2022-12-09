@@ -26,7 +26,7 @@ pub struct Broker {
 impl Broker {
     pub async fn new(script_root_dir: PathBuf, script_timeout: u64) -> Result<Broker> {
         debug!("Start script launcher");
-        let launcher = Launcher::new();
+        let launcher = Launcher::new()?;
 
         debug!("Connect to System DBus");
         let dbus_conn = Connection::system()
