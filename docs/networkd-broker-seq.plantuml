@@ -13,6 +13,7 @@ participant "**DBus**" as DBus
 box "networkd-broker" #DeepSkyBlue
 participant Broker
 participant ScriptBuilder
+participant Script
 participant Launcher
 end box
 
@@ -21,14 +22,15 @@ participant "**System**" as System
 autonumber
 
 == Initialization ==
-Launcher ->> Launcher ++ : receive script queue
+Launcher ->> Launcher ++ : wait for new script
 Broker ->> Broker ++ : listen to link events
 
 == Receive Signal ==
 DBus -> Broker ++ : link event signal
-Broker -> ScriptBuilder ++ : build scripts correspond to link event
+Broker -> ScriptBuilder ++ : build scripts correspond\nto link event
+ScriptBuilder -> Script ** : create
 return scripts
-Broker -> Launcher --: send scripts to queue
+Broker ->> Launcher --: send scripts to queue
 
 == Execute Script Queue ==
 Launcher ->> System ++ : execute script
