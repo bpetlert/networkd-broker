@@ -15,14 +15,14 @@ edition = "2021"
 publish = false
 
 [dependencies]
-anyhow = "1.0.66"
+anyhow = "1.0.68"
 async-std = "1.12.0"
-clap = { version = "4.0.29", features = ["derive"] }
+clap = { version = "4.0.32", features = ["derive"] }
 futures-util = "0.3.25"
-libsystemd = "0.5.0"
+libsystemd = "0.6.0"
 mimalloc = "0.1.32"
-serde = { version = "1.0.150", features = ["derive"] }
-serde_json = "1.0.89"
+serde = { version = "1.0.151", features = ["derive"] }
+serde_json = "1.0.91"
 tracing = { version = "0.1.37", features = [
     "max_level_debug",
     "release_max_level_debug",
