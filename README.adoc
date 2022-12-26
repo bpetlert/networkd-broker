@@ -1,6 +1,16 @@
 = Networkd-broker
 :toc:
 :toc-placement!:
+:xrefstyle: full
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:status:
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
 
 image:https://img.shields.io/github/v/tag/bpetlert/networkd-broker?include_prereleases&label=release&style=flat-square[Release,link=https://github.com/bpetlert/networkd-broker/releases/latest]
 image:https://img.shields.io/aur/version/networkd-broker?style=flat-square["AUR: networkd-broker",link=https://aur.archlinux.org/packages/networkd-broker/]
@@ -68,6 +78,7 @@ It can be overridden by `--timeout` option in service configuration.
 Any of the scripts which has filename (exclude extension) end with '-nowait' is run immediately, without waitting for the termination of previous scripts.
 e.g. `script-nowait`, `script-nowait.sh`
 
+.Directories of Commonly Used Network Events
 [source,console]
 ----
 /etc/networkd
@@ -83,6 +94,8 @@ e.g. `script-nowait`, `script-nowait.sh`
 The scripts are run in alphabetical order, one at a time with two arguments and a set of environment variables being passed.
 Each script run asynchronously from `networkd-broker` process.
 
+[[table-script-arguments]]
+.Script's Arguments
 |===
 | Argument | Description
 
@@ -96,8 +109,9 @@ see `man networkctl` for more details.
 
 The following environment variables are being passed to each script:
 
+.Script's Environment Variables
 |===
-| Variable | Description
+| Environment Variable | Description
 
 | `NWD_DEVICE_IFACE`
 | Link name that operation just happened on, same value as `IFACE`
@@ -108,6 +122,22 @@ The following environment variables are being passed to each script:
 | `NWD_JSON`
 | All the link details are encoded in JSON format.
 |===
+
+[TIP]
+.Add Uncommonly Used Network Events
+====
+There are link's `STATE` which are not list in <<table-script-arguments>>.
+To find out which link state that can be added, using the following command:
+[source,console]
+----
+$ journalctl -u networkd-broker.service | grep "Respond to" | grep -v -E "(carrier)|(degraded)|(dormant)|(no-carrier)|(off)|(routable)"
+
+...  INFO networkd_broker::broker: Respond to 'enslaved' event of 'vethbece646'
+----
+
+The result shows that event `enslaved` can be used for device `vethbece646`.
+To use this event, crate directory `/etc/networkd/broker.d/enslaved.d` and put scripts in it.
+====
 
 === Example Usage
 
