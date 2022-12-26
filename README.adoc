@@ -152,9 +152,10 @@ The script must be put (or symlink) in `/etc/networkd/broker.d/routable.d`, and 
 
 STATE=$1
 IFACE=$2
+DEV=wlp3s0
 
-if [[ $IFACE != "wlp3s0" ]]; then
-    exit 0
+if [[ "$IFACE" != "$DEV" ]]; then
+  exit 2
 fi
 
 if [[ "$STATE" = "routable" ]]; then
@@ -163,10 +164,14 @@ if [[ "$STATE" = "routable" ]]; then
   sleep 10
   chronyc makestep > /dev/null
   echo "Activate chrony"
+  exit 0
 elif [[ "$STATE" = "no-carrier" ]]; then
   chronyc offline > /dev/null
   echo "Deactivate chrony"
+  exit 0
 fi
+
+exit 0
 ----
 
 ./etc/networkd
