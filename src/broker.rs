@@ -4,7 +4,7 @@ use anyhow::{bail, Context, Result};
 use futures_util::stream::StreamExt;
 use libsystemd::daemon::{self, NotifyState};
 use tracing::{debug, error, info, warn};
-use zbus::{fdo::DBusProxy, Connection, MatchRule, Message, MessageStream};
+use zbus::{Connection, MatchRule, Message, MessageStream};
 
 use crate::{
     dbus_interface::NetworkManagerProxy,
@@ -48,28 +48,17 @@ impl Broker {
     }
 
     pub async fn listen(&mut self) -> Result<()> {
-        debug!("Create filter proxy");
-        let proxy: DBusProxy = zbus::fdo::DBusProxy::new(&self.dbus_conn)
-            .await
-            .context("Failed to crate dbus's filter proxy")?;
-
-        let rule = MatchRule::builder()
+        let rule: MatchRule = MatchRule::builder()
             .msg_type(zbus::MessageType::Signal)
             .interface("org.freedesktop.DBus.Properties")?
             .member("PropertiesChanged")?
             .path_namespace("/org/freedesktop/network1/link")?
             .build();
 
-        if let Err(err) = proxy
-            .add_match_rule(rule)
+        debug!("Create filtered message stream");
+        let mut stream: MessageStream = MessageStream::for_match_rule(rule, &self.dbus_conn, None)
             .await
-            .context("Cannot crate filter proxy")
-        {
-            bail!("{err:#}");
-        }
-
-        debug!("Create message stream");
-        let mut stream = MessageStream::from(&self.dbus_conn);
+            .context("Cannot create filtered message stream")?;
 
         debug!("Notify systemd that we are ready :)");
         if !daemon::notify(false, &[NotifyState::Ready])
