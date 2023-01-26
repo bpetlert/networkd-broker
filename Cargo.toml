@@ -17,7 +17,7 @@ publish = false
 [dependencies]
 anyhow = "1.0.68"
 async-std = "1.12.0"
-clap = { version = "4.1.1", features = ["derive"] }
+clap = { version = "4.1.4", features = ["derive"] }
 futures-util = "0.3.25"
 libsystemd = "0.6.0"
 mimalloc = "0.1.34"
