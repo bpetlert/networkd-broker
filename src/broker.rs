@@ -225,7 +225,6 @@ mod tests {
             .unwrap();
         let links: Vec<Vec<&str>> = stdout
             .lines()
-            .into_iter()
             .map(|line| line.split(' ').collect())
             .collect();
 
