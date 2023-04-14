@@ -1,6 +1,6 @@
 # Maintainer: Bhanupong Petchlert <bpetlert@gmail.com>
 pkgname=networkd-broker
-pkgver=0.7.0
+pkgver=0.8.0
 pkgrel=1
 pkgdesc="An event broker daemon for systemd-networkd"
 arch=('x86_64')
