@@ -16,8 +16,8 @@ pub struct Arguments {
     pub script_dir: PathBuf,
 
     /// Generate events reflecting preexisting state and behavior on startup
-    #[arg(short = 'T', long = "run-startup-triggers")]
-    pub run_startup_triggers: bool,
+    #[arg(short = 'T', long = "startup-triggers")]
+    pub startup_triggers: bool,
 
     /// Script execution timeout in seconds
     #[arg(short = 't', long = "timeout", default_value_t = DEFAULT_TIMEOUT)]
@@ -37,7 +37,7 @@ mod tests {
         )
         .expect("Paring argument");
         assert_eq!(args.script_dir, PathBuf::from("/etc/networkd/broker.d"));
-        assert!(!args.run_startup_triggers);
+        assert!(!args.startup_triggers);
         assert_eq!(args.timeout, DEFAULT_TIMEOUT);
 
         // Full long arguments
@@ -45,13 +45,13 @@ mod tests {
             env!("CARGO_CRATE_NAME"),
             "--script-dir",
             "/etc/networkd/broker2.d",
-            "--run-startup-triggers",
+            "--startup-triggers",
             "--timeout",
             "50",
         ]))
         .expect("Paring argument");
         assert_eq!(args.script_dir, PathBuf::from("/etc/networkd/broker2.d"));
-        assert!(args.run_startup_triggers);
+        assert!(args.startup_triggers);
         assert_eq!(args.timeout, 50);
 
         // Full short arguments
@@ -65,7 +65,7 @@ mod tests {
         ]))
         .expect("Paring argument");
         assert_eq!(args.script_dir, PathBuf::from("/etc/networkd/broker2.d"));
-        assert!(args.run_startup_triggers);
+        assert!(args.startup_triggers);
         assert_eq!(args.timeout, 50);
     }
 }

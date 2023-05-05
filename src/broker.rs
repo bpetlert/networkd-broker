@@ -127,7 +127,7 @@ impl Broker {
         let proxy = NetworkManagerProxy::new(&self.dbus_conn).await?;
         let links = proxy.list_links().await?;
         for (index, name, path) in links {
-            info!("run-startup-triggers on '{name}'");
+            info!("run startup-triggers on '{name}'");
 
             let describe_link = proxy.describe_link(index).await?;
 
@@ -154,7 +154,7 @@ impl Broker {
             }
         }
 
-        info!("Finished 'run-startup-triggers'");
+        info!("Finished 'run startup-triggers'");
         Ok(())
     }
 

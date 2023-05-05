@@ -31,8 +31,8 @@ fn run() -> Result<()> {
             .await
             .context("Failed to create broker thread")?;
 
-        if arguments.run_startup_triggers {
-            info!("Found '--run-startup-triggers'. Start execute all scripts for the current state for each interface");
+        if arguments.startup_triggers {
+            info!("Found '--startup-triggers'. Start execute all scripts for the current state for each interface");
             if let Err(err) = broker
                 .trigger_all()
                 .await
