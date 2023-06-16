@@ -288,10 +288,11 @@ mod tests {
     use std::{
         ffi::OsStr,
         fs::{self, DirBuilder},
+        ops::Deref,
         os::unix::fs::OpenOptionsExt,
     };
+    use sysinfo::{get_current_pid, ProcessExt, System, SystemExt, UserExt};
     use tempfile::TempDir;
-    use users::{get_current_gid, get_current_uid};
 
     #[test]
     fn should_run_nowait() {
@@ -359,8 +360,13 @@ mod tests {
     fn test_build_new_script_from_dir() {
         let temp_dir = setup_script_dir();
         let broker_root = temp_dir.path().join("etc/networkd/broker.d");
-        let uid = get_current_uid();
-        let gid = get_current_gid();
+        let pid = get_current_pid().unwrap();
+        let system: System = System::new_all();
+        let p = system.process(pid).unwrap();
+        let user = system.get_user_by_id(p.user_id().unwrap()).unwrap();
+        let uid = user.id();
+        let uid: u32 = *uid.deref();
+        let gid: u32 = *user.group_id().deref();
 
         // 3 scripts of current uid/gid for carrier state
         // 00-executable

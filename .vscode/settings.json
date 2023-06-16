@@ -18,6 +18,7 @@
     "SSID",
     "stdintf",
     "structopt",
+    "sysinfo",
     "udev",
     "veth",
     "wimax",

@@ -37,5 +37,5 @@ zbus = "3.13.1"
 
 [dev-dependencies]
 duct = "0.13.6"
+sysinfo = "0.29.2"
 tempfile = "3.6.0"
-users = "0.11.0"
