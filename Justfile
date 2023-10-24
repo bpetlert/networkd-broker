@@ -37,8 +37,8 @@ release VERSION:
 
 # Update and audit dependencies
 update-deps:
-  cargo update
   cargo upgrade
+  cargo update
   cargo audit
 
 # Crate Arch package from GIT source
