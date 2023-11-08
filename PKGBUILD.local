@@ -9,8 +9,6 @@ license=('GPL-3.0-or-later')
 depends=('dbus')
 makedepends=(cargo)
 options=(!lto)
-provides=("${pkgname}")
-conflicts=("${pkgname}")
 
 # Build from local directory
 source=()
