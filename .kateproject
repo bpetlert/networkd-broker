@@ -1,0 +1,11 @@
+{
+    "name": "networkd-broker",
+    "files": [
+        {
+            "git": 1
+        }
+    ],
+    "exclude_patterns": [
+        ".vscode"
+    ]
+}
