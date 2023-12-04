@@ -34,5 +34,4 @@ package() {
   install -dm755 "$pkgdir/etc/networkd/broker.d/"{carrier.d,degraded.d,dormant.d,no-carrier.d,off.d,routable.d}
 
   install -Dm644 "README.adoc" "$pkgdir/usr/share/doc/${pkgname}/README.adoc"
-  install -Dm644 "COPYING" "$pkgdir/usr/share/licenses/${pkgname}/COPYING"
 }
