@@ -112,14 +112,15 @@ impl ScriptBuilder {
         uid: Option<u32>,
         gid: Option<u32>,
     ) -> Result<Vec<ScriptBuilder>> {
+        let mut scripts: Vec<ScriptBuilder> = Vec::new();
+
         if !path.exists() {
-            bail!("`{}` does not exist", path.display());
+            debug!("`{}` does not exist", path.display());
+            return Ok(scripts);
         }
 
         let uid = uid.unwrap_or(0); // Default is UID of root
         let gid = gid.unwrap_or(0); // Default is GID of root
-
-        let mut scripts: Vec<ScriptBuilder> = Vec::new();
 
         for entry in WalkDir::new(path)
             .min_depth(1)
@@ -171,7 +172,7 @@ impl ScriptBuilder {
         }
 
         if scripts.is_empty() {
-            bail!("No script in `{}`", path.display());
+            debug!("No script in `{}`", path.display());
         }
 
         Ok(scripts)
