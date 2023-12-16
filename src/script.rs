@@ -391,18 +391,18 @@ mod tests {
 
         // No script for configuring state
         let configuring_d = broker_root.join("configuring.d");
-        let result = ScriptBuilder::build_from(&configuring_d, Some(uid), Some(gid));
-        assert!(result.is_err());
+        let result = ScriptBuilder::build_from(&configuring_d, Some(uid), Some(gid)).unwrap();
+        assert!(result.is_empty());
 
         // No script for root in degraded.d
         let degraded_d = broker_root.join("degraded.d");
-        let result = ScriptBuilder::build_from(&degraded_d, None, None);
-        assert!(result.is_err());
+        let result = ScriptBuilder::build_from(&degraded_d, None, None).unwrap();
+        assert!(result.is_empty());
 
         // No directory for routable state
         let routable_d = broker_root.join("routable.d");
-        let result = ScriptBuilder::build_from(&routable_d, Some(uid), Some(gid));
-        assert!(result.is_err());
+        let result = ScriptBuilder::build_from(&routable_d, Some(uid), Some(gid)).unwrap();
+        assert!(result.is_empty());
     }
 
     fn setup_script_dir() -> tempfile::TempDir {
