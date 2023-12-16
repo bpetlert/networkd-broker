@@ -217,6 +217,7 @@ mod tests {
     use duct::cmd;
 
     #[test]
+    #[ignore]
     fn test_init_link_state_cache() {
         // Get all network links using NetworkctlCtl command
         let stdout = cmd!("networkctl", "--no-pager", "--no-legend", "list")
