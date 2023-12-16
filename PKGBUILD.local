@@ -15,34 +15,34 @@ source=()
 
 # Using the most recent annotated tag reachable from the last commit.
 pkgver() {
-  cd "$startdir"
+  cd "${startdir}"
   git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
 }
 
 prepare() {
-  cd "$startdir"
-  cargo fetch --locked --target "$CARCH-unknown-linux-gnu"
+  cd "${startdir}"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
 }
 
 build() {
-  cd "$startdir"
-
+  cd "${startdir}"
   export RUSTUP_TOOLCHAIN=stable
 
   # Ignore target-dir in ~/.cargo/config, reset it to default: "target".
-  # Add "$srcdir" to support BUILDDIR variable in makepkg.
-  export CARGO_TARGET_DIR=$srcdir/target
+  # Add "${srcdir}" to support BUILDDIR variable in makepkg.
+  export CARGO_TARGET_DIR=${srcdir}/target
 
-  cargo build  --frozen --release
+  cargo build --frozen --release
 }
 
 package() {
-  cd "$srcdir"
-  install -Dm755 "target/release/networkd-broker" "$pkgdir/usr/bin/networkd-broker"
+  cd "${srcdir}"
+  install -Dm755 "target/release/networkd-broker" "${pkgdir}/usr/bin/networkd-broker"
 
-  install -Dm644 "$startdir/networkd-broker.service" "$pkgdir/usr/lib/systemd/system/networkd-broker.service"
+  install -Dm644 "${startdir}/networkd-broker.service" "${pkgdir}/usr/lib/systemd/system/networkd-broker.service"
 
-  install -dm755 "$pkgdir/etc/networkd/broker.d/"{carrier.d,degraded.d,dormant.d,no-carrier.d,off.d,routable.d}
+  install -dm755 "${pkgdir}/etc/networkd/broker.d/"{carrier.d,degraded.d,dormant.d,no-carrier.d,off.d,routable.d}
 
-  install -Dm644 "$startdir/README.adoc" "$pkgdir/usr/share/doc/${pkgname}/README.adoc"
+  install -Dm644 "${startdir}/README.adoc" "${pkgdir}/usr/share/doc/${pkgname}/README.adoc"
 }
