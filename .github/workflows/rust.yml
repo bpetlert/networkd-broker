@@ -5,13 +5,13 @@ on:
     branches: [ "main" ]
     paths:
       - "**.rs"
-      - "**.toml"
+      - "**/Cargo.*"
       - ".github/workflows/rust.yml"
   pull_request:
     branches: [ "main" ]
     paths:
       - "**.rs"
-      - "**.toml"
+      - "**/Cargo.*"
       - ".github/workflows/rust.yml"
 
 env:
