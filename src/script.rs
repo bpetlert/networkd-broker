@@ -292,7 +292,6 @@ mod tests {
         ops::Deref,
         os::unix::fs::OpenOptionsExt,
     };
-    use sysinfo::{get_current_pid, ProcessExt, System, SystemExt, UserExt};
     use tempfile::TempDir;
 
     #[test]
@@ -361,13 +360,18 @@ mod tests {
     fn test_build_new_script_from_dir() {
         let temp_dir = setup_script_dir();
         let broker_root = temp_dir.path().join("etc/networkd/broker.d");
-        let pid = get_current_pid().unwrap();
-        let system: System = System::new_all();
-        let p = system.process(pid).unwrap();
-        let user = system.get_user_by_id(p.user_id().unwrap()).unwrap();
-        let uid = user.id();
-        let uid: u32 = *uid.deref();
-        let gid: u32 = *user.group_id().deref();
+
+        let (uid, gid) = {
+            let pid = sysinfo::get_current_pid().unwrap();
+            let system = sysinfo::System::new_all();
+            let p = system.process(pid).unwrap();
+            let users = sysinfo::Users::new_with_refreshed_list();
+            let user = users.get_user_by_id(p.user_id().unwrap()).unwrap();
+            let uid = user.id();
+            let uid: u32 = *uid.deref();
+            let gid: u32 = *user.group_id().deref();
+            (uid, gid)
+        };
 
         // 3 scripts of current uid/gid for carrier state
         // 00-executable
