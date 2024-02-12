@@ -33,7 +33,7 @@ tracing-subscriber = { version = "0.3.18", features = [
 ], default-features = false }
 wait-timeout = "0.2.0"
 walkdir = "2.4.0"
-zbus = "3.15.0"
+zbus = "4.0.0"
 
 [dev-dependencies]
 duct = "0.13.7"

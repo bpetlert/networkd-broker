@@ -1,9 +1,9 @@
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use tracing::debug;
-use zbus::{Message, MessageType};
+use zbus::{names::InterfaceName, Message, MessageType};
 
-use crate::dbus_interface::NetworkManagerProxy;
+use crate::network_dbus::NetworkManagerProxy;
 
 #[derive(Deserialize)]
 pub struct LinkDetails {
@@ -49,14 +49,16 @@ impl LinkEvent {
             bail!("Event message {:?} is not dbus signal", msg.message_type());
         }
 
-        if &*msg.interface().unwrap() != "org.freedesktop.DBus.Properties" {
+        if msg.header().interface()
+            != Some(&InterfaceName::try_from("org.freedesktop.DBus.Properties")?)
+        {
             bail!(
-                "{} is not 'org.freedesktop.DBus.Properties'",
-                &*msg.interface().unwrap()
+                "{:?} is not 'org.freedesktop.DBus.Properties'",
+                msg.header().interface()
             );
         }
 
-        let path: String = if let Some(path) = msg.path() {
+        let path: String = if let Some(path) = msg.header().path() {
             path.as_str().to_string()
         } else {
             bail!("Invalid path: {:?}", &msg);

@@ -7,9 +7,9 @@ use tracing::{debug, error, info, warn};
 use zbus::{Connection, MatchRule, Message, MessageStream};
 
 use crate::{
-    dbus_interface::NetworkManagerProxy,
     launcher::Launcher,
     link::{LinkDetails, LinkEvent},
+    network_dbus::NetworkManagerProxy,
     script::{EnvVar, ScriptBuilder},
 };
 
@@ -81,7 +81,7 @@ impl Broker {
                 let msg: Arc<Message> = match msg {
                     Ok(m) => {
                         debug!("New message: {m}");
-                        m
+                        m.into()
                     }
                     Err(err) => {
                         error!("{err:#}");
