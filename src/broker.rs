@@ -101,7 +101,7 @@ impl Broker {
                                 }
 
                                 debug!("Update link state cache of {}", link_event.iface);
-                                *previous_operational_state = link_event.state.clone();
+                                previous_operational_state.clone_from(&link_event.state);
                             }
                             None => {
                                 debug!("Insert new link state cache");
