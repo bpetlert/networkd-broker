@@ -15,27 +15,27 @@ edition = "2021"
 publish = false
 
 [dependencies]
-anyhow = "1.0.83"
-async-std = "1.12.0"
-clap = { version = "4.5.4", features = ["derive"] }
-futures-util = "0.3.30"
-libsystemd = "0.7.0"
-mimalloc = { version = "0.1.41", features = ["secure"] }
-serde = { version = "1.0.201", features = ["derive"] }
-serde_json = "1.0.117"
-tracing = { version = "0.1.40", features = [
+anyhow = "~1"
+async-std = "~1.12"
+clap = { version = "~4.5", features = ["derive"] }
+futures-util = "~0.3"
+libsystemd = "~0.7"
+mimalloc = { version = "~0.1", features = ["secure"] }
+serde = { version = "~1.0", features = ["derive"] }
+serde_json = "~1.0"
+tracing = { version = "~0.1", features = [
     "max_level_debug",
     "release_max_level_debug",
 ] }
-tracing-subscriber = { version = "0.3.18", features = [
+tracing-subscriber = { version = "~0.3", features = [
     "env-filter",
     "fmt",
 ], default-features = false }
-wait-timeout = "0.2.0"
-walkdir = "2.5.0"
-zbus = "4.2.1"
+wait-timeout = "~0.2"
+walkdir = "~2.5"
+zbus = "~4"
 
 [dev-dependencies]
-duct = "0.13.7"
-sysinfo = "0.30.12"
-tempfile = "3.10.1"
+duct = "~0.13"
+sysinfo = "~0.30"
+tempfile = "~3.10"
