@@ -21,9 +21,9 @@ sudo busctl monitor --match "type='signal',path_namespace='/org/freedesktop/netw
 busctl --system call org.freedesktop.network1 /org/freedesktop/network1 org.freedesktop.network1.Manager ListLinks
 ----
 
-== Generate D-Bus interface
+== Generate D-Bus interface using zbus-xmlgen 5.0.1
 
 [source,shell]
 ----
-zbus-xmlgen --system org.freedesktop.network1 /org/freedesktop/network1 org.freedesktop.network1.Manager
+zbus-xmlgen system org.freedesktop.network1 /org/freedesktop/network1
 ----
