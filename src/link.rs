@@ -1,7 +1,7 @@
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use tracing::debug;
-use zbus::{names::InterfaceName, Message, MessageType};
+use zbus::{names::InterfaceName, Message};
 
 use crate::network_dbus::NetworkManagerProxy;
 
@@ -45,7 +45,7 @@ pub struct LinkEvent {
 impl LinkEvent {
     /// Extract link event from DBus signal message
     pub async fn new(msg: &Message, conn: &::zbus::Connection) -> Result<Box<LinkEvent>> {
-        if msg.message_type() != MessageType::Signal {
+        if msg.message_type() != zbus::message::Type::Signal {
             bail!("Event message {:?} is not dbus signal", msg.message_type());
         }
 

@@ -16,7 +16,7 @@ publish = false
 
 [dependencies]
 anyhow = "~1"
-async-std = "~1.12"
+async-std = "~1"
 clap = { version = "~4.5", features = ["derive"] }
 futures-util = "~0.3"
 libsystemd = "~0.7"
@@ -33,9 +33,9 @@ tracing-subscriber = { version = "~0.3", features = [
 ], default-features = false }
 wait-timeout = "~0.2"
 walkdir = "~2.5"
-zbus = "~4"
+zbus = "~5"
 
 [dev-dependencies]
 duct = "~0.13"
-sysinfo = "~0.30"
-tempfile = "~3.10"
+sysinfo = "~0.33"
+tempfile = "~3"
