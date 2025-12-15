@@ -239,7 +239,6 @@ impl Broker {
 
 #[cfg(test)]
 mod tests {
-    use async_std::task;
     use duct::cmd;
 
     use super::*;
@@ -257,7 +256,7 @@ mod tests {
             .map(|line| line.split(' ').collect())
             .collect();
 
-        task::block_on(async {
+        zbus::block_on(async {
             let dbus_conn = Connection::system().await.unwrap();
             let cache = Broker::init_link_state_cache(&dbus_conn).await.unwrap();
             for link in links {

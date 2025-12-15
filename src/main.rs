@@ -8,7 +8,6 @@ use anyhow::{
     Result,
     anyhow,
 };
-use async_std::task;
 use clap::Parser;
 use mimalloc::MiMalloc;
 use networkd_broker::{
@@ -40,7 +39,7 @@ fn run() -> Result<()> {
     let arguments = Arguments::parse();
     debug!("Run with {:?}", arguments);
 
-    task::block_on(async {
+    zbus::block_on(async {
         let mut broker = Broker::new(arguments.script_dir, arguments.timeout)
             .await
             .context("Failed to create broker thread")?;
