@@ -1,11 +1,19 @@
-use crate::common::{
-    log_check::{next_log, setup_log},
-    STATE,
-};
-use networkd_broker::script::Script;
 use std::{
-    io::{BufReader, Seek},
+    io::{
+        BufReader,
+        Seek,
+    },
     path::Path,
+};
+
+use networkd_broker::script::Script;
+
+use crate::common::{
+    STATE,
+    log_check::{
+        next_log,
+        setup_log,
+    },
 };
 
 mod common;
@@ -39,10 +47,10 @@ fn wrong_arg_2() {
         )
     );
     assert_eq!(
-            next_log(&mut reader),
-            format!(
-                " INFO networkd_broker::script: Finished executing {} {STATE} wrong-arg1, exit status: 53\n",
-                script_path.display()
-            )
-        );
+        next_log(&mut reader),
+        format!(
+            " INFO networkd_broker::script: Finished executing {} {STATE} wrong-arg1, exit status: 53\n",
+            script_path.display()
+        )
+    );
 }

@@ -1,11 +1,20 @@
-use crate::common::{
-    log_check::{next_log, setup_log},
-    IFACE, STATE,
-};
-use networkd_broker::script::Script;
 use std::{
-    io::{BufReader, Seek},
+    io::{
+        BufReader,
+        Seek,
+    },
     path::Path,
+};
+
+use networkd_broker::script::Script;
+
+use crate::common::{
+    IFACE,
+    STATE,
+    log_check::{
+        next_log,
+        setup_log,
+    },
 };
 
 mod common;

@@ -44,6 +44,10 @@ makepkg:
     makepkg -p PKGBUILD.local
     git co PKGBUILD.local
 
+# Format code
+format:
+    cargo +nightly fmt
+
 # Monitor org.freedesktop.network1
 monitor-bus:
     sudo busctl monitor --match "type='signal',path_namespace='/org/freedesktop/network1/link',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'" | grep --after-context=2 OperationalState

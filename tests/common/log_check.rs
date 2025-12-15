@@ -1,8 +1,12 @@
 use std::{
     fs::File,
-    io::{BufRead, BufReader},
+    io::{
+        BufRead,
+        BufReader,
+    },
     thread,
 };
+
 use tempfile::NamedTempFile;
 use tracing_subscriber::EnvFilter;
 

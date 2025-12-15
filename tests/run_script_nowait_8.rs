@@ -1,12 +1,24 @@
-use crate::common::{
-    log_check::{next_log, setup_log},
-    IFACE, STATE,
-};
-use networkd_broker::script::{EnvVar, Script};
 use std::{
-    io::{BufReader, Seek},
+    io::{
+        BufReader,
+        Seek,
+    },
     path::Path,
     thread,
+};
+
+use networkd_broker::script::{
+    EnvVar,
+    Script,
+};
+
+use crate::common::{
+    IFACE,
+    STATE,
+    log_check::{
+        next_log,
+        setup_log,
+    },
 };
 
 mod common;
@@ -49,10 +61,10 @@ fn script_execution_timeout() {
     assert!(ret.is_ok(), "Script execution timeout");
     thread::sleep(std::time::Duration::from_secs(3));
     assert_eq!(
-            next_log(&mut reader),
-            format!(
-                " INFO networkd_broker::script: Finished executing {} routable wlp3s0, exit status: 0\n",
-                script_path.display()
-            )
-        );
+        next_log(&mut reader),
+        format!(
+            " INFO networkd_broker::script: Finished executing {} routable wlp3s0, exit status: 0\n",
+            script_path.display()
+        )
+    );
 }

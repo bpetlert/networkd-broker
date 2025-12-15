@@ -1,11 +1,23 @@
-use crate::common::{
-    log_check::{next_log, setup_log},
-    IFACE, STATE,
-};
-use networkd_broker::script::{EnvVar, Script};
 use std::{
-    io::{BufReader, Seek},
+    io::{
+        BufReader,
+        Seek,
+    },
     path::Path,
+};
+
+use networkd_broker::script::{
+    EnvVar,
+    Script,
+};
+
+use crate::common::{
+    IFACE,
+    STATE,
+    log_check::{
+        next_log,
+        setup_log,
+    },
 };
 
 mod common;
@@ -41,10 +53,10 @@ fn missing_nwd_json() {
         )
     );
     assert_eq!(
-            next_log(&mut reader),
-            format!(
-                " INFO networkd_broker::script: Finished executing {} {STATE} {IFACE}, exit status: 56\n",
-                script_path.display()
-            )
-        );
+        next_log(&mut reader),
+        format!(
+            " INFO networkd_broker::script: Finished executing {} {STATE} {IFACE}, exit status: 56\n",
+            script_path.display()
+        )
+    );
 }

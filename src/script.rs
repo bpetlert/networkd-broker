@@ -2,14 +2,25 @@ use std::{
     collections::HashMap,
     fmt,
     os::unix::fs::MetadataExt,
-    path::{Path, PathBuf},
+    path::{
+        Path,
+        PathBuf,
+    },
     process::Command,
     thread,
     time::Duration,
 };
 
-use anyhow::{bail, Context, Result};
-use tracing::{debug, info, warn};
+use anyhow::{
+    Context,
+    Result,
+    bail,
+};
+use tracing::{
+    debug,
+    info,
+    warn,
+};
 use wait_timeout::ChildExt;
 use walkdir::WalkDir;
 
@@ -285,14 +296,19 @@ impl Script {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::{
         ffi::OsStr,
-        fs::{self, DirBuilder},
+        fs::{
+            self,
+            DirBuilder,
+        },
         ops::Deref,
         os::unix::fs::OpenOptionsExt,
     };
+
     use tempfile::TempDir;
+
+    use super::*;
 
     #[test]
     fn should_run_nowait() {

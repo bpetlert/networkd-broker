@@ -1,11 +1,20 @@
-use crate::common::{
-    log_check::{next_log, setup_log, wait_for_thread},
-    IFACE,
-};
-use networkd_broker::script::Script;
 use std::{
-    io::{BufReader, Seek},
+    io::{
+        BufReader,
+        Seek,
+    },
     path::Path,
+};
+
+use networkd_broker::script::Script;
+
+use crate::common::{
+    IFACE,
+    log_check::{
+        next_log,
+        setup_log,
+        wait_for_thread,
+    },
 };
 
 mod common;
@@ -40,10 +49,10 @@ fn wrong_arg_1() {
         )
     );
     assert_eq!(
-            next_log(&mut reader),
-            format!(
-                " INFO networkd_broker::script: Finished executing {} wrong-arg0 {IFACE}, exit status: 52\n",
-                script_path.display()
-            )
-        );
+        next_log(&mut reader),
+        format!(
+            " INFO networkd_broker::script: Finished executing {} wrong-arg0 {IFACE}, exit status: 52\n",
+            script_path.display()
+        )
+    );
 }

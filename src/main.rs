@@ -1,13 +1,27 @@
-use std::{io, process::ExitCode};
+use std::{
+    io,
+    process::ExitCode,
+};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{
+    Context,
+    Result,
+    anyhow,
+};
 use async_std::task;
 use clap::Parser;
 use mimalloc::MiMalloc;
-use tracing::{debug, error, info, warn};
+use networkd_broker::{
+    args::Arguments,
+    broker::Broker,
+};
+use tracing::{
+    debug,
+    error,
+    info,
+    warn,
+};
 use tracing_subscriber::EnvFilter;
-
-use networkd_broker::{args::Arguments, broker::Broker};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -32,7 +46,9 @@ fn run() -> Result<()> {
             .context("Failed to create broker thread")?;
 
         if arguments.startup_triggers {
-            info!("Found '--startup-triggers'. Start execute all scripts for the current state for each interface");
+            info!(
+                "Found '--startup-triggers'. Start execute all scripts for the current state for each interface"
+            );
             if let Err(err) = broker
                 .trigger_all()
                 .await

@@ -1,10 +1,21 @@
 use std::{
-    sync::mpsc::{channel, RecvError, Sender},
+    sync::mpsc::{
+        RecvError,
+        Sender,
+        channel,
+    },
     thread,
 };
 
-use anyhow::{Context, Result};
-use tracing::{debug, error, warn};
+use anyhow::{
+    Context,
+    Result,
+};
+use tracing::{
+    debug,
+    error,
+    warn,
+};
 
 use crate::script::Script;
 
@@ -19,18 +30,20 @@ impl Launcher {
 
         thread::Builder::new()
             .name("script launcher".to_string())
-            .spawn(move || loop {
-                match rx.recv() {
-                    Ok(script) => {
-                        debug!("Received a script {script:?}");
-                        if let Err(err) = script.execute().context("Failed to execute script") {
-                            warn!("{err:#}");
+            .spawn(move || {
+                loop {
+                    match rx.recv() {
+                        Ok(script) => {
+                            debug!("Received a script {script:?}");
+                            if let Err(err) = script.execute().context("Failed to execute script") {
+                                warn!("{err:#}");
+                            }
                         }
-                    }
-                    Err(RecvError {}) => {
-                        error!("Failed to receive script");
-                    }
-                };
+                        Err(RecvError {}) => {
+                            error!("Failed to receive script");
+                        }
+                    };
+                }
             })
             .context("Could not create script launcher thread")?;
 

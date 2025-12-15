@@ -1,16 +1,43 @@
-use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
+use std::{
+    collections::BTreeMap,
+    path::PathBuf,
+    sync::Arc,
+};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{
+    Context,
+    Result,
+    bail,
+};
 use futures_util::stream::StreamExt;
-use libsystemd::daemon::{self, NotifyState};
-use tracing::{debug, error, info, warn};
-use zbus::{Connection, MatchRule, Message, MessageStream};
+use libsystemd::daemon::{
+    self,
+    NotifyState,
+};
+use tracing::{
+    debug,
+    error,
+    info,
+    warn,
+};
+use zbus::{
+    Connection,
+    MatchRule,
+    Message,
+    MessageStream,
+};
 
 use crate::{
     launcher::Launcher,
-    link::{LinkDetails, LinkEvent},
+    link::{
+        LinkDetails,
+        LinkEvent,
+    },
     network_dbus::NetworkManagerProxy,
-    script::{EnvVar, ScriptBuilder},
+    script::{
+        EnvVar,
+        ScriptBuilder,
+    },
 };
 
 /// A responder manages link event
@@ -212,9 +239,10 @@ impl Broker {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use async_std::task;
     use duct::cmd;
+
+    use super::*;
 
     #[test]
     #[ignore]
