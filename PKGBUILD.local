@@ -22,7 +22,7 @@ pkgver() {
 prepare() {
     cd "${startdir}"
     export RUSTUP_TOOLCHAIN=stable
-    cargo fetch --locked --target $(rustc --print host-tuple)
+    cargo fetch --locked --target host-tuple
 }
 
 build() {
@@ -38,8 +38,8 @@ build() {
 
 package() {
     cd "${srcdir}"
-    install -Dm755 "target/release/networkd-broker" "${pkgdir}/usr/bin/networkd-broker"
-    install -Dm644 "${startdir}/networkd-broker.service" "${pkgdir}/usr/lib/systemd/system/networkd-broker.service"
-    install -dm755 "${pkgdir}/etc/networkd/broker.d/"{carrier.d,degraded.d,dormant.d,no-carrier.d,off.d,routable.d}
-    install -Dm644 "${startdir}/README.adoc" "${pkgdir}/usr/share/doc/${pkgname}/README.adoc"
+    install -vDm755 -t "${pkgdir}/usr/bin" target/release/networkd-broker
+    install -vDm644 -t "${pkgdir}/usr/lib/systemd/system" "${startdir}/networkd-broker.service"
+    install -vDm644 -t "${pkgdir}/usr/share/doc/${pkgname}" "${startdir}/README.adoc"
+    install -vdm755 "${pkgdir}/etc/networkd/broker.d/"{carrier.d,degraded.d,dormant.d,no-carrier.d,off.d,routable.d}
 }
