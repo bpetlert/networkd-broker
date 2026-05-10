@@ -37,8 +37,7 @@ build() {
 }
 
 package() {
-    cd "${srcdir}"
-    install -vDm755 -t "${pkgdir}/usr/bin" target/release/networkd-broker
+    install -vDm755 -t "${pkgdir}/usr/bin" "${srcdir}/target/release/networkd-broker"
     install -vDm644 -t "${pkgdir}/usr/lib/systemd/system" "${startdir}/networkd-broker.service"
     install -vDm644 -t "${pkgdir}/usr/share/doc/${pkgname}" "${startdir}/README.adoc"
     install -vdm755 "${pkgdir}/etc/networkd/broker.d/"{carrier.d,degraded.d,dormant.d,no-carrier.d,off.d,routable.d}
