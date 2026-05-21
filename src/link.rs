@@ -15,7 +15,11 @@ use crate::network_dbus::NetworkManagerProxy;
 #[derive(Deserialize)]
 pub struct LinkDetails {
     #[serde(rename = "AdministrativeState")]
-    administrative_state: String,
+    // systemd 249's Manager.DescribeLink() JSON, as shipped in Ubuntu 22.04,
+    // does not include this key, even though AdministrativeState is available
+    // as a property on org.freedesktop.network1.Link. systemd 255's
+    // DescribeLink() JSON does include it, so keep parsing it when present.
+    administrative_state: Option<String>,
 
     #[serde(rename = "OperationalState")]
     pub operational_state: String,
@@ -86,7 +90,10 @@ impl LinkEvent {
                     ,  AddressState: {d}\
                     ,  IPv4AddressState: {e}\
                     ,  IPv6AddressState: {f}",
-                    a = link_details.administrative_state,
+                    a = link_details
+                        .administrative_state
+                        .as_deref()
+                        .unwrap_or("unavailable"),
                     b = link_details.operational_state,
                     c = link_details.carrier_state,
                     d = link_details.address_state,
