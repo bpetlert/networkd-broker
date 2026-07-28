@@ -225,7 +225,7 @@ impl Script {
             .with_context(|| {
                 format!(
                     "Failed to execute {script} {arg0} {arg1}",
-                    script = &self.path.display(),
+                    script = self.path.display(),
                     arg0 = self.args[0],
                     arg1 = self.args[1]
                 )
@@ -233,7 +233,7 @@ impl Script {
             Ok(process) => {
                 info!(
                     "Execute {script} {arg0} {arg1}",
-                    script = &self.path.display(),
+                    script = self.path.display(),
                     arg0 = self.args[0],
                     arg1 = self.args[1]
                 );
@@ -250,7 +250,7 @@ impl Script {
                 Some(exit_code) => {
                     info!(
                         "Finished executing {script} {arg0} {arg1}, {exit_code}",
-                        script = &self.path.display(),
+                        script = self.path.display(),
                         arg0 = self.args[0],
                         arg1 = self.args[1]
                     );
@@ -261,7 +261,7 @@ impl Script {
                     let exit_code = process.wait()?;
                     bail!(
                         "Execute timeout {script} {arg0} {arg1}, >= {timeout} seconds, {exit_code}",
-                        script = &self.path.display(),
+                        script = self.path.display(),
                         arg0 = self.args[0],
                         arg1 = self.args[1]
                     );
@@ -276,13 +276,13 @@ impl Script {
                 {
                     Ok(exit_code) => info!(
                         "Finished executing {script} {arg0} {arg1}, {exit_code}",
-                        script = &self.path.display(),
+                        script = self.path.display(),
                         arg0 = self.args[0],
                         arg1 = self.args[1]
                     ),
                     Err(err) => warn!(
                         "{script} {arg0} {arg1} wasn't running: {err:#}",
-                        script = &self.path.display(),
+                        script = self.path.display(),
                         arg0 = self.args[0],
                         arg1 = self.args[1]
                     ),

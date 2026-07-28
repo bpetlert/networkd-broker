@@ -72,7 +72,7 @@ impl LinkEvent {
         let path: String = if let Some(path) = msg.header().path() {
             path.as_str().to_string()
         } else {
-            bail!("Invalid path: {:?}", &msg);
+            bail!("Invalid path: {msg:?}");
         };
 
         let link = LinkEvent::link_from_path(&path, conn).await?;
