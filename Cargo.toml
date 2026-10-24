@@ -28,7 +28,7 @@ tracing-subscriber = { version = "~0.3", default-features = false, features = [
 ] }
 wait-timeout = "~0.2"
 walkdir = "~2.5"
-zbus = "~5"
+zbus = "~6"
 
 [dev-dependencies]
 duct = "~1"

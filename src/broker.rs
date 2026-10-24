@@ -77,10 +77,11 @@ impl Broker {
     pub async fn listen(&mut self) -> Result<()> {
         let rule: MatchRule = MatchRule::builder()
             .msg_type(zbus::message::Type::Signal)
-            .interface("org.freedesktop.DBus.Properties")?
-            .member("PropertiesChanged")?
-            .path_namespace("/org/freedesktop/network1/link")?
-            .build();
+            .sender("org.freedesktop.DBus")
+            .interface("org.freedesktop.DBus.Properties")
+            .member("PropertiesChanged")
+            .path_namespace("/org/freedesktop/network1/link")
+            .build()?;
 
         debug!("Create filtered message stream");
         let mut stream: MessageStream = MessageStream::for_match_rule(rule, &self.dbus_conn, None)
