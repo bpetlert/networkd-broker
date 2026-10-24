@@ -77,7 +77,6 @@ impl Broker {
     pub async fn listen(&mut self) -> Result<()> {
         let rule: MatchRule = MatchRule::builder()
             .msg_type(zbus::message::Type::Signal)
-            .sender("org.freedesktop.DBus")
             .interface("org.freedesktop.DBus.Properties")
             .member("PropertiesChanged")
             .path_namespace("/org/freedesktop/network1/link")
