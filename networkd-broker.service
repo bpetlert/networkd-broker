@@ -6,6 +6,8 @@ After=dbus.socket
 [Service]
 Type=notify
 ExecStart=/usr/bin/networkd-broker
+RuntimeDirectory=networkd-broker
+WorkingDirectory=/run/networkd-broker
 Restart=on-failure
 RestartSec=30s
 
