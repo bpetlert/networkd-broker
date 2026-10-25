@@ -93,6 +93,7 @@ e.g. `script-nowait`, `script-nowait.sh`
 
 The scripts are run in alphabetical order, one at a time, with two arguments and a set of environment variables passed.
 Each script runs asynchronously from `networkd-broker` process.
+The initial working directory of each script is `/run/networkd-broker`.
 
 [[table-script-arguments]]
 .Script's Arguments
