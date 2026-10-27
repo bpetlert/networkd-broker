@@ -204,8 +204,49 @@ ExecStart=/usr/bin/networkd-broker --startup-triggers
 
 == Design
 
-[link=https://raw.githubusercontent.com/bpetlert/networkd-broker/main/docs/assets/networkd-broker.svg?sanitize=true&raw=true]
-image::https://raw.githubusercontent.com/bpetlert/networkd-broker/main/docs/assets/networkd-broker.svg?sanitize=true&raw=true[Sequence Diagram]
+[mermaid]
+....
+sequenceDiagram
+    box Operating System
+        participant System
+        participant DBus
+    end
+
+    box networkd-broker
+        participant Broker@{ "type" : "control" }
+        participant Launcher@{ "type" : "control" }
+        participant ScriptBuilder@{ "type": "queue" }
+        participant Script@{ "type" : "entity" }
+    end
+
+    autonumber
+
+    critical Initialization
+        Launcher-)+Launcher: wait for new script
+        Broker-)+Broker: listen to link events
+    end
+
+    par Receive Signal
+        DBus->>Broker: link event signal
+        activate Broker
+
+        Broker->>+ScriptBuilder: build scripts correspond to link event
+
+        ScriptBuilder->>+Script: create
+        Script-->>-ScriptBuilder: return[script]
+
+        ScriptBuilder-->>-Broker: return[scripts]
+
+        Broker-)Launcher: send scripts to queue
+        deactivate Broker
+    and Execute Script Queue
+        Launcher->>+System: execute script
+        System--)-Launcher: return[exit status]
+    end
+
+    deactivate Broker
+    deactivate Launcher
+....
 
 == License
 
