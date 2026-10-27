@@ -1,8 +1,7 @@
+set default-list := true
+
 ip := "/usr/bin/ip -color"
 VIR_IFACE := "nwd-eth0"
-
-@_default:
-    just --list
 
 run +ARGS='':
     cargo run -- {{ ARGS }}
