@@ -1,29 +1,25 @@
-= Notes
+# Notes
 
-== Monitoring Network Event
+## Monitoring Network Event
 
-[source,shell]
-----
+```bash
 dbus-monitor --system "type='signal',path_namespace='/org/freedesktop/network1/link',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'"
-----
+```
 
 Or
 
-[source,shell]
-----
+```bash
 sudo busctl monitor --match "type='signal',path_namespace='/org/freedesktop/network1/link',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'"
-----
+```
 
-== Get all links
+## Get all links
 
-[source,shell]
-----
+```bash
 busctl --system call org.freedesktop.network1 /org/freedesktop/network1 org.freedesktop.network1.Manager ListLinks
-----
+```
 
-== Generate D-Bus interface using zbus-xmlgen 5.0.1
+## Generate D-Bus interface using zbus-xmlgen 6.0.0
 
-[source,shell]
-----
+```bash
 zbus-xmlgen system org.freedesktop.network1 /org/freedesktop/network1
-----
+```
