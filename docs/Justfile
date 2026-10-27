@@ -1,6 +1,0 @@
-set default-list
-
-# Generate assets
-build-assets:
-    mkdir -p assets
-    mmdc --input networkd-broker-seq.mermaid --output assets/networkd-broker.svg
